@@ -265,6 +265,8 @@ function getCostComponentDisplayName(costComponentName)
 function getEntityCostComponentsTooltipString(template, trainNum)
 {
 	var totalCosts = {};
+	if (!trainNum)
+		trainNum = 1;
 	for (var r in template.cost)
 		totalCosts[r] = Math.floor(template.cost[r] * trainNum);
 

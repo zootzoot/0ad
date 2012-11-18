@@ -436,7 +436,6 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 
 				var [buildingsCountToTrainFullBatch, fullBatchSize, remainderBatch] =
 					getTrainingBatchStatus(playerState, unitEntState.id, entType, selection);
-				var trainNum = 1;
 				if (Engine.HotkeyIsPressed("session.batchtrain"))
 				{
 					trainNum = buildingsCountToTrainFullBatch * fullBatchSize + remainderBatch;
