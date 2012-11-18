@@ -262,15 +262,19 @@ function getCostComponentDisplayName(costComponentName)
 /**
  * Helper function for getEntityCostTooltip.
  */
-function getEntityCostComponentsTooltipString(template)
+function getEntityCostComponentsTooltipString(template, trainNum)
 {
+	var totalCosts = {};
+	for (var r in template.cost)
+		totalCosts[r] = Math.floor(template.cost[r] * trainNum);
+
 	var costs = [];
-	if (template.cost.food) costs.push(getCostComponentDisplayName("food") + " " + template.cost.food);
-	if (template.cost.wood) costs.push(getCostComponentDisplayName("wood") + " " + template.cost.wood);
-	if (template.cost.metal) costs.push(getCostComponentDisplayName("metal") + " " + template.cost.metal);
-	if (template.cost.stone) costs.push(getCostComponentDisplayName("stone") + " " + template.cost.stone);
-	if (template.cost.population) costs.push(getCostComponentDisplayName("population") + " " + template.cost.population);
-	if (template.cost.time) costs.push(getCostComponentDisplayName("time") + " " + template.cost.time);
+	if (template.cost.food) costs.push(getCostComponentDisplayName("food") + " " + totalCosts.food);
+	if (template.cost.wood) costs.push(getCostComponentDisplayName("wood") + " " + totalCosts.wood);
+	if (template.cost.metal) costs.push(getCostComponentDisplayName("metal") + " " + totalCosts.metal);
+	if (template.cost.stone) costs.push(getCostComponentDisplayName("stone") + " " + totalCosts.stone);
+	if (template.cost.population) costs.push(getCostComponentDisplayName("population") + " " + totalCosts.population);
+	if (template.cost.time) costs.push(getCostComponentDisplayName("time") + " " + totalCosts.time);
 	return costs;
 }
 
@@ -335,7 +339,7 @@ function getWallPieceTooltip(wallTypes)
 /**
  * Returns the cost information to display in the specified entity's construction button tooltip.
  */
-function getEntityCostTooltip(template)
+function getEntityCostTooltip(template, trainNum)
 {
 	var cost = "[font=\"serif-bold-13\"]Costs:[/font] ";
 
@@ -357,7 +361,7 @@ function getEntityCostTooltip(template)
 	}
 	else if (template.cost)
 	{
-		var costs = getEntityCostComponentsTooltipString(template);
+		var costs = getEntityCostComponentsTooltipString(template, trainNum);
 		cost += costs.join("  ");
 	}
 	else
