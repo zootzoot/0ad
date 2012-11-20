@@ -1618,7 +1618,7 @@ function addResearchToQueue(entity, researchType)
 // the training button with shift down
 function getTrainingBatchStatus(playerState, entity, trainEntType, selection)
 {
-	var apporpriateBuildings = [entity];
+	var appropriateBuildings = [entity];
 	if (selection && selection.indexOf(entity) != -1)
 		appropriateBuildings = getBuidlingsWhichCanTrainEntity(selection, trainEntType);
 	var nextBatchTrainingCount = 0;
