@@ -205,7 +205,7 @@ GuiInterface.prototype.GetEntityState = function(player, ent)
 			"entities": cmpProductionQueue.GetEntitiesList(),
 			"technologies": cmpProductionQueue.GetTechnologiesList(),
 			"queue": cmpProductionQueue.GetQueue(),
-			"batchtimefactor": cmpProductionQueue.GetBatchTimeFactor(), // Batch build time multiplier
+			"getbatchtime": cmpProductionQueue.GetBatchTime, // Batch build time function
 		};
 	}
 

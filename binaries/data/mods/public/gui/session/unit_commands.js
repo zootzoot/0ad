@@ -441,7 +441,7 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 					trainNum = buildingsCountToTrainFullBatch * fullBatchSize + remainderBatch;
 				}
 
-				tooltip += "\n" + getEntityCostTooltip(template, trainNum);
+				tooltip += "\n" + getEntityCostTooltip(template, trainNum, unitEntState.getbatchtime);
 
 				if (template.health)
 					tooltip += "\n[font=\"serif-bold-13\"]Health:[/font] " + template.health;
