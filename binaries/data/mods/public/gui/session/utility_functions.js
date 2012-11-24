@@ -277,7 +277,7 @@ function getEntityCostComponentsTooltipString(template, trainNum, entity)
 	if (template.cost.metal) costs.push(getCostComponentDisplayName("metal") + " " + totalCosts.metal);
 	if (template.cost.stone) costs.push(getCostComponentDisplayName("stone") + " " + totalCosts.stone);
 	if (template.cost.population) costs.push(getCostComponentDisplayName("population") + " " + totalCosts.population);
-	if (template.cost.time) costs.push(getCostComponentDisplayName("time") + " " + totalCosts.time);
+	if (template.cost.time) costs.push(getCostComponentDisplayName("time") + " " + Math.ceil(totalCosts.time));
 	return costs;
 }
 
