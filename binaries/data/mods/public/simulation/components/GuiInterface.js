@@ -1622,9 +1622,8 @@ GuiInterface.prototype.CanAttack = function(player, data)
  */
 GuiInterface.prototype.GetBatchTime = function(player, data)
 {
-	var cmpPlayer = QueryPlayerIDInterface(player, IID_Player);
-	// TODO: work out what equation we should use here.
-	return Math.pow(data.batchSize, 0.7) * cmpPlayer.cheatTimeMultiplier;
+	var cmpProductionQueue = Engine.QueryInterface(data.entity, IID_ProductionQueue);
+	return cmpProductionQueue.GetBatchTime(data.batchSize);
 };
 
 GuiInterface.prototype.SetPathfinderDebugOverlay = function(player, enabled)

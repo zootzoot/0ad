@@ -262,14 +262,14 @@ function getCostComponentDisplayName(costComponentName)
 /**
  * Helper function for getEntityCostTooltip.
  */
-function getEntityCostComponentsTooltipString(template, trainNum)
+function getEntityCostComponentsTooltipString(template, trainNum, entity)
 {
 	var totalCosts = {};
 	if (!trainNum)
 		trainNum = 1;
 	for (var r in template.cost)
 		totalCosts[r] = Math.floor(template.cost[r] * trainNum);
-	totalCosts.time = Engine.GuiInterfaceCall("GetBatchTime", {"batchSize": trainNum});
+	totalCosts.time = Engine.GuiInterfaceCall("GetBatchTime", {"entity": entity, "batchSize": trainNum});
 
 	var costs = [];
 	if (template.cost.food) costs.push(getCostComponentDisplayName("food") + " " + totalCosts.food);
@@ -342,7 +342,7 @@ function getWallPieceTooltip(wallTypes)
 /**
  * Returns the cost information to display in the specified entity's construction button tooltip.
  */
-function getEntityCostTooltip(template, trainNum)
+function getEntityCostTooltip(template, trainNum, entity)
 {
 	var cost = "[font=\"serif-bold-13\"]Costs:[/font] ";
 
@@ -364,7 +364,7 @@ function getEntityCostTooltip(template, trainNum)
 	}
 	else if (template.cost)
 	{
-		var costs = getEntityCostComponentsTooltipString(template, trainNum);
+		var costs = getEntityCostComponentsTooltipString(template, trainNum, entity);
 		cost += costs.join("  ");
 	}
 	else
