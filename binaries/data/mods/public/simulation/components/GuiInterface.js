@@ -205,7 +205,6 @@ GuiInterface.prototype.GetEntityState = function(player, ent)
 			"entities": cmpProductionQueue.GetEntitiesList(),
 			"technologies": cmpProductionQueue.GetTechnologiesList(),
 			"queue": cmpProductionQueue.GetQueue(),
-			"getbatchtime": cmpProductionQueue.GetBatchTime, // Batch build time function
 		};
 	}
 
@@ -1618,6 +1617,16 @@ GuiInterface.prototype.CanAttack = function(player, data)
 	return cmpAttack.CanAttack(data.target);
 };
 
+/*
+ * Returns batch build time.
+ */
+GuiInterface.prototype.GetBatchTime = function(player, data)
+{
+	var cmpPlayer = QueryPlayerIDInterface(player, IID_Player);
+	// TODO: work out what equation we should use here.
+	return Math.pow(data.batchSize, 0.7) * cmpPlayer.cheatTimeMultiplier;
+};
+
 GuiInterface.prototype.SetPathfinderDebugOverlay = function(player, enabled)
 {
 	var cmpPathfinder = Engine.QueryInterface(SYSTEM_ENTITY, IID_Pathfinder);
@@ -1689,6 +1698,7 @@ var exposedFunctions = {
 	"GetTradingRouteGain": 1,
 	"GetTradingDetails": 1,
 	"CanAttack": 1,
+	"GetBatchTime": 1,
 
 	"SetPathfinderDebugOverlay": 1,
 	"SetObstructionDebugOverlay": 1,
