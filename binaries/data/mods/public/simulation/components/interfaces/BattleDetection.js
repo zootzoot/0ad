@@ -1,5 +1,5 @@
 Engine.RegisterInterface("BattleDetection");
 
-// Message of the form { "to": "STATE.NAME" }.
+// Message of the form { "to": "STATE" }.
 // sent whenever the battle state changes
-Engine.RegisterMessageType("BattleDetectionUpdate");
+Engine.RegisterMessageType("BattleStateChanged");

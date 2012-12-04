@@ -19,6 +19,15 @@ BattleDetection.prototype.Init = function()
 	this.StartTimer(0, this.interval);
 };
 
+BattleDetection.prototype.setState = function(state)
+{
+	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
+	if (state != this.state) {
+		this.state = state;
+		Engine.PostMessage(this.entity, MT_BattleStateChanged, { "player": cmpPlayer.GetPlayerID(), "to": this.state });
+	}
+};
+
 BattleDetection.prototype.OnGlobalAttacked = function(msg)
 {
 	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
@@ -69,12 +78,11 @@ BattleDetection.prototype.updateAlertness = function()
 	else
 		this.alertness = Math.max(0, this.alertness-1);
 
-	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
 	if (this.alertness >= this.alertnessThreshold)
-		warn("Player "+String(cmpPlayer.GetPlayerID())+" is in battle!");
+		this.setState("BATTLE");
 	else
-		warn("Player "+String(cmpPlayer.GetPlayerID())+" is at peace.");
-};
+		this.setState("PEACE");
+}
 
 BattleDetection.prototype.TimerHandler = function(data, lateness)
 {
