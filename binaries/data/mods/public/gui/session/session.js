@@ -269,9 +269,6 @@ function onTick()
 	updateMenuPosition(tickLength);
 
 	// Update music state
-	var battleState = Engine.GuiInterfaceCall("GetBattleState", Engine.GetPlayerID());
-	if (battleState)
-		global.music.setState(global.music.states[battleState]);
 	global.music.updateTimer();
 
 	// When training is blocked, flash population (alternates colour every 500msec)
@@ -379,6 +376,11 @@ function onSimulationUpdate()
 	updateResearchDisplay();
 	updateBuildingPlacementPreview();
 	updateTimeElapsedCounter(simState);
+
+	// Update music state on basis of battle state.
+	var battleState = Engine.GuiInterfaceCall("GetBattleState", Engine.GetPlayerID());
+	if (battleState)
+		global.music.setState(global.music.states[battleState]);
 }
 
 function updateGroups()
