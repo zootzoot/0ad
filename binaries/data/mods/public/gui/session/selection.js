@@ -269,14 +269,14 @@ EntitySelection.prototype.checkRenamedEntities = function()
 		{
 			if (this.selected[renamedEntity.entity])
 			{
-				this.rebuildSelection(renamedLookup);
+				this.rebuildSelection(renamedLookup, false);
 				break;
 			}
 		}
 	}
 }
 
-EntitySelection.prototype.addList = function(ents)
+EntitySelection.prototype.addList = function(ents, playsound)
 {
 	var selection = this.toList();
 	var playerID = Engine.GetPlayerID();
@@ -314,7 +314,7 @@ EntitySelection.prototype.addList = function(ents)
 	{
 		// Play the sound if the entity is controllable by us or Gaia-owned.
 		var owner = GetEntityState(added[0]).player;
-		if (owner == playerID || owner == 0 || g_DevSettings.controlAll)
+		if (playsound !== false && owner == playerID || owner == 0 || g_DevSettings.controlAll)
 			_playSound(added[0]);
 	}
 
@@ -353,7 +353,7 @@ EntitySelection.prototype.reset = function()
 	this.dirty = true;
 };
 
-EntitySelection.prototype.rebuildSelection = function(renamed)
+EntitySelection.prototype.rebuildSelection = function(renamed, playsound)
 {
 	var oldSelection = this.selected;
 	g_Selection.reset();
@@ -362,7 +362,7 @@ EntitySelection.prototype.rebuildSelection = function(renamed)
 	for each (var ent in oldSelection)
 		toAdd.push(renamed[ent] ? renamed[ent] : ent);
 
-	this.addList(toAdd);
+	this.addList(toAdd, playsound);
 }
 
 EntitySelection.prototype.toList = function()
