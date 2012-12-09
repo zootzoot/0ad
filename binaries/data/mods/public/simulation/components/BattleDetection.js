@@ -11,7 +11,8 @@ BattleDetection.prototype.Init = function()
 	this.interval = 5 * 1000; // Interval over which damage rate should calculated in milliseconds.
 	this.damageRateThreshold = 0.04; // Damage rate at which alertness is increased.
 	this.alertnessMax = 4; // Maximum alertness level.
-	this.alertnessThreshold = 2; // Alertness at which the player is considered in battle.
+	this.alertnessBattleThreshold = 2; // Alertness at which the player is considered in battle.
+	this.alertnessPeaceThreshold = 0; // Alertness at which the player is considered at peace.
 
 	this.pastAttacks = [];
 	this.alertness = 0;
@@ -78,9 +79,9 @@ BattleDetection.prototype.updateAlertness = function()
 	else
 		this.alertness = Math.max(0, this.alertness-1);
 
-	if (this.alertness >= this.alertnessThreshold)
+	if (this.alertness >= this.alertnessBattleThreshold)
 		this.setState("BATTLE");
-	else
+	else if (this.alertness <= this.alertnessPeaceThreshold)
 		this.setState("PEACE");
 }
 
