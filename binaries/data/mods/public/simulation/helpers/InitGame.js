@@ -28,6 +28,14 @@ function InitGame(settings)
 			for (var resouces in cmpPlayer.resourceCount)
 				cmpPlayer.resourceCount[resouces] = settings.StartingResources;
 	}
+	if (settings.TriggerData) {
+		var cmpTriggerManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_TriggerManager);
+		for (var i = 0; i < settings.TriggerData.length; ++i)
+		{
+			if (settings.TriggerData[i])
+				cmpTriggerManager.AddTrigger(settings.TriggerData[i]);
+		}
+	}
 }
 
 Engine.RegisterGlobal("InitGame", InitGame);
