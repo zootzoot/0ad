@@ -25,8 +25,8 @@ function InitGame(settings)
 		cmpPlayer.maxPop = settings.PopulationCap;
 
 		if (settings.mapType !== "scenario")
-			for (var resouces in cmpPlayer.resourceCount)
-				cmpPlayer.resourceCount[resouces] = settings.StartingResources;
+			for (var resources in cmpPlayer.resourceCount)
+				cmpPlayer.resourceCount[resources] = settings.StartingResources;
 	}
 	if (settings.TriggerData) {
 		var cmpTriggerManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_TriggerManager);
