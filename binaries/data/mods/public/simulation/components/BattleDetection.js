@@ -29,27 +29,6 @@ BattleDetection.prototype.setState = function(state)
 	}
 };
 
-BattleDetection.prototype.OnGlobalAttacked = function(msg)
-{
-	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
-	// Only register attacks dealt by myself.
-	var cmpAttackerOwnership = Engine.QueryInterface(msg.attacker, IID_Ownership);
-	if (!cmpAttackerOwnership || cmpAttackerOwnership.GetOwner() != cmpPlayer.GetPlayerID())
-		return;
-	// Don't register attacks dealt against Gaia or invalid player.	
-	var cmpTargetOwnership = Engine.QueryInterface(msg.target, IID_Ownership);
-        if (!cmpTargetOwnership || cmpTargetOwnership.GetOwner() <= 0)
-		return;
-
-	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
-	var currentTime = cmpTimer.GetTime();
-
-	if (msg.damage)
-		this.pastAttacks.push({time: currentTime, damage: msg.damage});
-
-	this.updateDamageRate();
-};
-
 BattleDetection.prototype.updateDamageRate = function()
 {
         var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
@@ -133,11 +112,11 @@ BattleDetection.prototype.OnGlobalAttacked = function(msg)
 	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
 	// Only register attacks dealt by myself.
 	var cmpAttackerOwnership = Engine.QueryInterface(msg.attacker, IID_Ownership);
-	if (cmpAttackerOwnership.GetOwner() != cmpPlayer.GetPlayerID())
+	if (!cmpAttackerOwnership || cmpAttackerOwnership.GetOwner() != cmpPlayer.GetPlayerID())
 		return;
-	// Don't register attacks dealt against Gaia.	
+	// Don't register attacks dealt against Gaia or invalid player.	
 	var cmpTargetOwnership = Engine.QueryInterface(msg.target, IID_Ownership);
-	if (cmpTargetOwnership.GetOwner() == 0)
+        if (!cmpTargetOwnership || cmpTargetOwnership.GetOwner() <= 0)
 		return;
 
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
