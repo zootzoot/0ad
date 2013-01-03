@@ -609,7 +609,7 @@ GuiInterface.prototype.GetStartedResearch = function(player)
 GuiInterface.prototype.GetBattleState = function(player)
 {
 	var cmpBattleDetection = QueryPlayerIDInterface(player, IID_BattleDetection);
-	return cmpBattleDetection.state;
+	return cmpBattleDetection.GetState();
 };
 
 // Used to show a red square over GUI elements you can't yet afford.

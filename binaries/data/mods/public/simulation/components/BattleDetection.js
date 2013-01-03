@@ -64,6 +64,11 @@ BattleDetection.prototype.updateAlertness = function()
 		this.setState("PEACE");
 }
 
+BattleDetection.prototype.GetState = function()
+{
+	return this.state;
+}
+
 BattleDetection.prototype.TimerHandler = function(data, lateness)
 {
 	// Reset the timer
