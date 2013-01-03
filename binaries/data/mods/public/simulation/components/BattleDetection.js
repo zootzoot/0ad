@@ -22,8 +22,8 @@ BattleDetection.prototype.Init = function()
 
 BattleDetection.prototype.setState = function(state)
 {
-	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
 	if (state != this.state) {
+		var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
 		this.state = state;
 		Engine.PostMessage(this.entity, MT_BattleStateChanged, { "player": cmpPlayer.GetPlayerID(), "to": this.state });
 	}
