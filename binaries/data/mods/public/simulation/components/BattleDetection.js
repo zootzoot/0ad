@@ -15,7 +15,7 @@ BattleDetection.prototype.Init = function()
 	this.alertnessMax = 4; // Maximum alertness level.
 
 	this.damage = 0; // Accumulative damage dealt over the current timer period.
-	this.damageRate = 0; // Total damage dealt over the last timer period.
+	this.damageRate = 0; // Damage rate. Total damage dealt over the previous timer period.
 	this.alertness = 0; // Alertness level. Incremented if damage rate exceeds 'damageRateThreshold' over a given timer period and decremented if it does not.
 
 	this.StartTimer(0, this.interval);
