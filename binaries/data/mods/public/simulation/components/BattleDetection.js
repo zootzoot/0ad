@@ -8,14 +8,15 @@ BattleDetection.prototype.Schema =
 
 BattleDetection.prototype.Init = function()
 {
-	this.interval = 5 * 1000; // Interval over which damage rate should calculated in milliseconds.
+	this.interval = 5 * 1000; // Duration of one timer period. Interval over which damage rate should be calculated in milliseconds.
 	this.damageRateThreshold = 0.04; // Damage rate at which alertness is increased.
-	this.alertnessMax = 4; // Maximum alertness level.
 	this.alertnessBattleThreshold = 2; // Alertness at which the player is considered in battle.
 	this.alertnessPeaceThreshold = 0; // Alertness at which the player is considered at peace.
+	this.alertnessMax = 4; // Maximum alertness level.
 
-	this.pastAttacks = [];
-	this.alertness = 0; // Alertness level. Incremented if damage rate exceeds 'damageRateThreshold' over an 'interval' period and decremented if it does not.
+	this.damage = 0; // Accumulative damage dealt over the current timer period.
+	this.damageRate = 0; // Total damage dealt over the last timer period.
+	this.alertness = 0; // Alertness level. Incremented if damage rate exceeds 'damageRateThreshold' over a given timer period and decremented if it does not.
 
 	this.StartTimer(0, this.interval);
 };
@@ -29,34 +30,12 @@ BattleDetection.prototype.setState = function(state)
 	}
 };
 
-BattleDetection.prototype.updateDamageRate = function()
-{
-        var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
-        var currentTime = cmpTimer.GetTime();
-
-	// Cull past attacks older than this.interval.
-	var totalDamage = 0;
-	var deltaTime = 0;
-	for (var i = this.pastAttacks.length-1; i >= 0; i--)
-	{
-		deltaTime = currentTime - this.pastAttacks[i].time;
-		if (deltaTime < this.interval)
-			totalDamage += this.pastAttacks[i].damage;
-		else
-			this.pastAttacks.splice(i, 1);
-	}
-
-	// Calculate damage rate.
-	this.damageRate = totalDamage / this.interval;
-	return this.damageRate;
-};
-
 BattleDetection.prototype.updateAlertness = function()
 {
-	if (this.updateDamageRate() > this.damageRateThreshold)
-		this.alertness = Math.min(this.alertnessMax, this.alertness+1);
+	if (this.damageRate > this.damageRateThreshold)
+		this.alertness = Math.min(this.alertnessMax, this.alertness+1); // Increment alertness up to 'alertnessMax'.
 	else
-		this.alertness = Math.max(0, this.alertness-1);
+		this.alertness = Math.max(0, this.alertness-1); // Decrement alertness down to zero.
 
 	if (this.alertness >= this.alertnessBattleThreshold)
 		this.setState("BATTLE");
@@ -77,6 +56,8 @@ BattleDetection.prototype.TimerHandler = function(data, lateness)
 		this.timer = undefined;
 	}
 
+	this.damageRate = this.damage; // Define damage rate as total damage dealt over the previous timer period.
+	this.damage = 0; // Reset damage counter for the next timer period.
 	this.updateAlertness();
 };
 
@@ -127,13 +108,8 @@ BattleDetection.prototype.OnGlobalAttacked = function(msg)
         if (!cmpTargetOwnership || cmpTargetOwnership.GetOwner() <= 0)
 		return;
 
-	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
-	var currentTime = cmpTimer.GetTime();
-
 	if (msg.damage)
-		this.pastAttacks.push({time: currentTime, damage: msg.damage});
-
-	this.updateDamageRate();
+		this.damage += msg.damage;
 };
 
 Engine.RegisterComponentType(IID_BattleDetection, "BattleDetection", BattleDetection);
