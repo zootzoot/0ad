@@ -81,14 +81,17 @@ BattleDetection.prototype.TimerHandler = function(data, lateness)
 };
 
 /**
- * Set up the BattleDetection timer to run after 'offset' msecs, and then
- * every 'repeat' msecs until StopTimer is called. A "Timer" message
- * will be sent each time the timer runs.
+ * Set up the BattleDetection timer to run after 'offset' msecs, and then optionally
+ * every 'repeat' msecs until StopTimer is called, if 'repeat' is set. A "Timer" message
+ * will be sent each time the timer runs. Must not be called if a timer is already active.
  */
 BattleDetection.prototype.StartTimer = function(offset, repeat)
 {
 	if (this.timer)
+	{
+		this.StopTimer();
 		error("Called StartTimer when there's already an active timer");
+	}
 
 	var data = { "timerRepeat": repeat };
 
