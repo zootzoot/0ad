@@ -15,7 +15,7 @@ BattleDetection.prototype.Init = function()
 	this.alertnessPeaceThreshold = 0; // Alertness at which the player is considered at peace.
 
 	this.pastAttacks = [];
-	this.alertness = 0; // Alertness level. Incremented if damage rate exceeds 'damageRateThreshold' over a 'interval' period and decremented if it does not.
+	this.alertness = 0; // Alertness level. Incremented if damage rate exceeds 'damageRateThreshold' over an 'interval' period and decremented if it does not.
 
 	this.StartTimer(0, this.interval);
 };
@@ -90,7 +90,7 @@ BattleDetection.prototype.StartTimer = function(offset, repeat)
 	if (this.timer)
 	{
 		this.StopTimer();
-		error("Called StartTimer when there's already an active timer");
+		error("Called StartTimer when there's already an active timer.");
 	}
 
 	var data = { "timerRepeat": repeat };
