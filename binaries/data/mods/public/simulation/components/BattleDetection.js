@@ -56,7 +56,7 @@ BattleDetection.prototype.TimerHandler = function(data, lateness)
 		this.timer = undefined;
 	}
 
-	this.damageRate = this.damage; // Define damage rate as total damage dealt over the previous timer period.
+	this.damageRate = this.damage / this.interval; // Define damage rate as total damage dealt per unit 'interval' (i.e. millisecond) over the previous timer period.
 	this.damage = 0; // Reset damage counter for the next timer period.
 	this.updateAlertness();
 };
