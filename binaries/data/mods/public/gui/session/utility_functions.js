@@ -398,6 +398,58 @@ function getNeededResourcesTooltip(resources)
 	return "\n\n[font=\"serif-bold-13\"][color=\"red\"]Insufficient resources:[/color][/font]\n" + formatted.join("  ");
 }
 
+/**
+ * Returns a formatted requirements tooltip.
+ */
+function getFormattedRequirementsTooltip(tmpl, vars)
+{
+	// TODO: Support entire requirements format.
+	if (vars.tech)
+	{
+		return tmpl;
+	}
+	else if (vars.all)
+	{
+		return tmpl;
+	}
+	else if (vars.any)
+	{
+		return tmpl;
+	}
+	else if (vars.class)
+	{
+		// TODO: Replace with human-readable class name.
+		var tooltip = tmpl.replace("%class%", vars.class);
+		if (vars.number && vars.number > 0)
+		{
+			tooltip = tooltip.replace("%number%", vars.number);
+		}
+		else
+		{
+			tooltip = tooltip.replace("%number%", 0);
+		}
+		if (vars.numberCount && vars.numberCount > 0)
+		{
+			tooltip = tooltip.replace("%numberCount%", vars.numberCount);
+		}
+		else
+		{
+			tooltip = tooltip.replace("%numberCount%", 0);
+		}
+		if (vars.numberLeft && vars.numberLeft > 0)
+		{
+			tooltip = tooltip.replace("%numberLeft%", vars.numberLeft);
+		}
+		else
+		{
+			tooltip = tooltip.replace("%numberLeft%", 0);
+		}
+		return tooltip;
+	}
+
+	return tmpl;
+}
+
 function getEntitySpeed(template)
 {
 	var speed = "";

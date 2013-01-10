@@ -179,6 +179,57 @@ TechnologyManager.prototype.CheckTechnologyRequirements = function (reqs)
 	return false;
 };
 
+
+// Private function for returning a set of measures pertaining to requirements
+TechnologyManager.prototype.GetRequirementsVars = function (reqs)
+{
+	var reqVars = {};
+
+	// If there are no requirements then all requirements are met
+	if (!reqs)
+		return false;
+	
+	if (reqs.tech)
+	{
+		return false;
+	}
+	else if (reqs.all)
+	{
+		return false;
+	}
+	else if (reqs.any)
+	{
+		return false;
+	}
+	else if (reqs.class)
+	{
+		reqVars.class = reqs.class;
+		if (reqs.numberOfTypes)
+			return false;
+		else if (reqs.number)
+		{
+			reqVars.number = reqs.number;
+			if (!this.classCounts[reqs.class])
+			{
+				reqVars.numberCount = 0;
+				reqVars.numberLeft = reqs.number;
+			}
+			else if (this.classCounts[reqs.class] < reqs.number)
+			{			
+				reqVars.numberCount = this.classCounts[reqs.class];
+				reqVars.numberLeft = reqs.number - this.classCounts[reqs.class];
+			}
+			else
+				reqVars = false;
+			return reqVars;
+		}
+	}
+	
+	// The technologies requirements are not a recognised format
+	error("GetRequirementsVars: Bad requirements " + uneval(reqs));
+	return false;
+};
+
 TechnologyManager.prototype.OnGlobalOwnershipChanged = function (msg)
 {
 	// This automatically updates typeCounts, classCounts and typeCountsByClass

@@ -553,6 +553,7 @@ GuiInterface.prototype.GetTechnologyData = function(player, name)
 	}
 	ret.tooltip = template.tooltip;
 	
+	ret.requirements = template.requirements;
 	if (template.requirementsTooltip)
 		ret.requirementsTooltip = template.requirementsTooltip;
 	else
@@ -612,6 +613,11 @@ GuiInterface.prototype.GetNeededResources = function(player, amounts)
 	return cmpPlayer.GetNeededResources(amounts);
 };
 
+GuiInterface.prototype.GetRequirementsVars = function(player, reqs)
+{
+	var cmpTechnologyManager = QueryPlayerIDInterface(player, IID_TechnologyManager);
+	return cmpTechnologyManager.GetRequirementsVars(reqs);
+};
 
 GuiInterface.prototype.PushNotification = function(notification)
 {
@@ -1698,6 +1704,7 @@ var exposedFunctions = {
 	"CheckTechnologyRequirements": 1,
 	"GetStartedResearch": 1,
 	"GetNeededResources": 1,
+	"GetRequirementsVars": 1,
 	"GetNextNotification": 1,
 
 	"GetAvailableFormations": 1,

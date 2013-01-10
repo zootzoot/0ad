@@ -673,7 +673,8 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 			if (guiName == RESEARCH && !Engine.GuiInterfaceCall("CheckTechnologyRequirements", entType))
 			{
 				button.enabled = false;
-				button.tooltip += "\n" + GetTechnologyData(entType).requirementsTooltip;
+				var reqVars = Engine.GuiInterfaceCall("GetRequirementsVars", template.requirements);
+				button.tooltip += "\n" + getFormattedRequirementsTooltip(GetTechnologyData(entType).requirementsTooltip, reqVars);
 				grayscale = "grayscale:";
 			}
 			
