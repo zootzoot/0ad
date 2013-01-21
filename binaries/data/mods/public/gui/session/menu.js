@@ -9,7 +9,7 @@ const RESUME = "Resume";
 const MARGIN = 4;
 
 // Includes the main menu button
-const NUM_BUTTONS = 7;
+const NUM_BUTTONS = 8;
 
 // Regular menu buttons
 const BUTTON_HEIGHT = 32;
@@ -361,7 +361,6 @@ function togglePause()
 	{
 		getGUIObjectByName("pauseButtonText").caption = RESUME;
 		setPaused(true);
-
 	}
 	else
 	{
@@ -372,11 +371,21 @@ function togglePause()
 	pauseOverlay.hidden = !pauseOverlay.hidden;
 }
 
+function openManual()
+{
+	closeMenu();
+	closeOpenDialogs();
+	pauseGame();
+	Engine.PushGuiPage("page_manual.xml", {"page": "intro", "closeCallback": resumeGame});
+}
+
 function toggleDeveloperOverlay()
 {
 	var devCommands = getGUIObjectByName("devCommands");
-	var text = devCommands.hidden? "opened." : "closed.";
+	var text = devCommands.hidden ? "opened." : "closed.";
 	submitChatDirectly("The Developer Overlay was " + text);
+	// Update the options dialog
+	getGUIObjectByName("developerOverlayCheckbox").checked = devCommands.hidden;
 	devCommands.hidden = !devCommands.hidden;
 }
 
@@ -387,12 +396,3 @@ function closeOpenDialogs()
 	closeDiplomacy();
 	closeSettings(false);
 }
-
-
-// Temporarily adding this here
-//function playButtonSound()
-//{
-//    const BUTTON_SOUND = "audio/interface/ui/ui_button_longclick.ogg";
-//    var buttonSound = new Sound(BUTTON_SOUND);
-//    buttonSound.play();
-//}
