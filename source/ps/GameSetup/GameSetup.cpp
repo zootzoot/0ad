@@ -84,6 +84,7 @@
 #include "renderer/ModelRenderer.h"
 #include "scripting/ScriptingHost.h"
 #include "scripting/ScriptGlue.h"
+#include "scriptinterface/DebuggingServer.h"
 #include "scriptinterface/ScriptInterface.h"
 #include "scriptinterface/ScriptStats.h"
 #include "simulation2/Simulation2.h"
@@ -899,6 +900,11 @@ void Init(const CmdLineArgs& args, int UNUSED(flags))
 	CFG_GET_VAL("profiler2.http.autoenable", Bool, profilerHTTPEnable);
 	if (profilerHTTPEnable)
 		g_Profiler2.EnableHTTP();
+		
+#if ENABLE_SCRIPT_DEBUGGING
+	LOGWARNING(L"Javascript debugging webserver enabled.");
+	g_DebuggingServer.EnableHTTP();
+#endif // ENABLE_SCRIPT_DEBUGGING
 
 	if (!g_Quickstart)
 		g_UserReporter.Initialize(); // after config

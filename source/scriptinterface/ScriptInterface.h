@@ -43,11 +43,13 @@ class AutoGCRooter;
 // TODO: what's a good default?
 #define DEFAULT_RUNTIME_SIZE 16 * 1024 * 1024
 
-
+// Does profiling and debugging work together?
 #ifdef NDEBUG
 #define ENABLE_SCRIPT_PROFILING 0
+#define ENABLE_SCRIPT_DEBUGGING 0
 #else
-#define ENABLE_SCRIPT_PROFILING 1
+#define ENABLE_SCRIPT_PROFILING 0
+#define ENABLE_SCRIPT_DEBUGGING 1
 #endif
 
 struct ScriptInterface_impl;
