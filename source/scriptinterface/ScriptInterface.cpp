@@ -18,6 +18,7 @@
 #include "precompiled.h"
 
 #include "ScriptInterface.h"
+#include "DebuggingServer.h"
 #include "ScriptStats.h"
 #include "AutoRooters.h"
 
@@ -493,9 +494,9 @@ ScriptInterface_impl::ScriptInterface_impl(const char* nativeScopeName, const sh
 	options |= JSOPTION_XML; // "ECMAScript for XML support: parse <!-- --> as a token"
 	options |= JSOPTION_VAROBJFIX; // "recommended" (fixes variable scoping)
 
-	// Enable method JIT, unless script profiling is enabled (since profiling
+	// Enable method JIT, unless script profiling/debugging is enabled (since profiling/debugging
 	// hooks are incompatible with the JIT)
-#if !ENABLE_SCRIPT_PROFILING
+#if !ENABLE_SCRIPT_PROFILING && !ENABLE_SCRIPT_DEBUGGING
 	options |= JSOPTION_METHODJIT;
 
 	// Some other JIT flags to experiment with:
@@ -582,6 +583,25 @@ ScriptInterface::ScriptInterface(const char* nativeScopeName, const char* debugN
 		if (g_ScriptStatsTable)
 			g_ScriptStatsTable->Add(this, debugName);
 	}
+	
+	// Register to the Debugger class
+#if ENABLE_SCRIPT_DEBUGGING
+	// TODO: Probably not all debug builds should have that enabled
+	// TODO: Implement proper error handling
+	JS_SetRuntimeDebugMode(GetRuntime(), true);
+	if(!JS_SetDebugMode(GetContext(), true))
+	{
+		LOGERROR(L"Failed to call JS_SetDebugMode");
+	}
+	if (!JS_GetDebugMode(GetContext()))
+	{
+		LOGERROR(L"Failed to set Spidermonkey to debug mode!");
+	}
+	else
+	{
+		g_DebuggingServer.RegisterScriptinterface(debugName, this);
+	}
+#endif // ENABLE_SCRIPT_DEBUGGING
 }
 
 ScriptInterface::~ScriptInterface()
@@ -591,6 +611,11 @@ ScriptInterface::~ScriptInterface()
 		if (g_ScriptStatsTable)
 			g_ScriptStatsTable->Remove(this);
 	}
+	
+	// Unregister from the Debugger class
+#if ENABLE_SCRIPT_DEBUGGING
+	g_DebuggingServer.UnRegisterScriptinterface(this);
+#endif // ENABLE_SCRIPT_DEBUGGING
 }
 
 void ScriptInterface::ShutDown()
@@ -1074,6 +1099,7 @@ std::string ScriptInterface::StringifyJSON(jsval obj, bool indent)
 	if (!JS_Stringify(m->m_cx, &obj, NULL, indent ? INT_TO_JSVAL(2) : JSVAL_VOID, &Stringifier::callback, &str))
 	{
 		LOGERROR(L"StringifyJSON failed");
+		JS_ClearPendingException(m->m_cx);
 		return "";
 	}
 
