@@ -552,7 +552,7 @@ void CThreadDebugger::SaveCallstack()
 		{
 			functionID = JS_GetFunctionId(fun);
 			if (NULL == functionID)
-				functionID = JS_NewStringCopyZ(m_pScriptInterface->GetContext(), "annonymous");
+				functionID = JS_NewStringCopyZ(m_pScriptInterface->GetContext(), "anonymous");
 		}
 
 		ENSURE(JS_DefineElement(m_pScriptInterface->GetContext(), jsArray, counter, STRING_TO_JSVAL(functionID), NULL, NULL, 0));
