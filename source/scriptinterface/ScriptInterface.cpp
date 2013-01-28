@@ -1099,6 +1099,7 @@ std::string ScriptInterface::StringifyJSON(jsval obj, bool indent)
 	if (!JS_Stringify(m->m_cx, &obj, NULL, indent ? INT_TO_JSVAL(2) : JSVAL_VOID, &Stringifier::callback, &str))
 	{
 		LOGERROR(L"StringifyJSON failed");
+		JS_ClearPendingException(m->m_cx);
 		return "";
 	}
 
