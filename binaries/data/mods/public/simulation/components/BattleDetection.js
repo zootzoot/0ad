@@ -8,11 +8,11 @@ BattleDetection.prototype.Schema =
 
 BattleDetection.prototype.Init = function()
 {
-	this.interval = 5 * 1000; // Duration of one timer period. Interval over which damage rate should be calculated in milliseconds.
+	this.interval = 2.5 * 1000; // Duration of one timer period. Interval over which damage rate should be calculated in milliseconds.
 	this.damageRateThreshold = 0.04; // Damage rate at which alertness is increased.
-	this.alertnessBattleThreshold = 2; // Alertness at which the player is considered in battle.
+	this.alertnessBattleThreshold = 4; // Alertness at which the player is considered in battle.
 	this.alertnessPeaceThreshold = 0; // Alertness at which the player is considered at peace.
-	this.alertnessMax = 4; // Maximum alertness level.
+	this.alertnessMax = 8; // Maximum alertness level.
 
 	this.damage = 0; // Accumulative damage dealt over the current timer period.
 	this.damageRate = 0; // Damage rate. Total damage dealt over the previous timer period per unit 'interval'.
