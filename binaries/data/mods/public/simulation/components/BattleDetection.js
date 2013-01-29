@@ -8,14 +8,15 @@ BattleDetection.prototype.Schema =
 
 BattleDetection.prototype.Init = function()
 {
-	this.interval = 2.5 * 1000; // Duration of one timer period. Interval over which damage rate should be calculated in milliseconds.
+	this.interval = 0.1 * 1000; // Duration of one timer period. Interval over which damage should be recorded in milliseconds.
+	this.recordLength = 25; // Record length. Number of timer cycles over which damage rate should be calculated.
 	this.damageRateThreshold = 0.04; // Damage rate at which alertness is increased.
 	this.alertnessBattleThreshold = 4; // Alertness at which the player is considered in battle.
 	this.alertnessPeaceThreshold = 0; // Alertness at which the player is considered at peace.
 	this.alertnessMax = 8; // Maximum alertness level.
 
-	this.damage = 0; // Accumulative damage dealt over the current timer period.
-	this.damageRate = 0; // Damage rate. Total damage dealt over the previous timer period per unit 'interval'.
+	this.damage = 0; // Damage counter. Accumulative damage done over the current timer period.
+	this.damageRecord = []; // Damage record. Array of elements representing total damage done in a given timer cycle.
 	this.alertness = 0; // Alertness level. Incremented if damage rate exceeds 'damageRateThreshold' over a given timer period and decremented if it does not.
 };
 
@@ -27,23 +28,6 @@ BattleDetection.prototype.setState = function(state)
 		Engine.PostMessage(this.entity, MT_BattleStateChanged, { "player": cmpPlayer.GetPlayerID(), "to": this.state });
 	}
 };
-
-BattleDetection.prototype.updateAlertness = function()
-{
-	if (this.damageRate > this.damageRateThreshold)
-		this.alertness = Math.min(this.alertnessMax, this.alertness+1); // Increment alertness up to 'alertnessMax'.
-	else
-		this.alertness = Math.max(0, this.alertness-1); // Decrement alertness down to zero.
-
-	// Stop damage rate timer if we're no longer alert.
-	if (!this.alertness)
-		this.stopTimer();
-
-	if (this.alertness >= this.alertnessBattleThreshold)
-		this.setState("BATTLE");
-	else if (this.alertness <= this.alertnessPeaceThreshold)
-		this.setState("PEACE");
-}
 
 BattleDetection.prototype.GetState = function()
 {
@@ -58,9 +42,34 @@ BattleDetection.prototype.TimerHandler = function(data, lateness)
 		this.timer = undefined;
 	}
 
-	this.damageRate = this.damage / this.interval; // Define damage rate as total damage dealt per unit 'interval' (i.e. millisecond) over the previous timer period.
+	this.damageRecord.unshift(this.damage);
+	if (this.damageRecord.length > this.recordLength)
+		this.damageRecord.splice(this.recordLength, this.damageRecord.length-1); // Discard any elements beyond 'recordLength'.
 	this.damage = 0; // Reset damage counter for the next timer period.
-	this.updateAlertness();
+
+	// Always update alertness if not already alert, or once per 'recordLength' otherwise.
+	if (!this.alertness || this.recordControl++ == 0)
+	{
+		var recordDamage = this.damageRecord.reduce(function(a, b) {return a + b;}, 0); // Sum up all values in the damage record.
+		var damageRate = recordDamage / (this.recordLength * this.interval);
+
+		if (damageRate > this.damageRateThreshold)
+			this.alertness = Math.min(this.alertnessMax, this.alertness+1); // Increment alertness up to 'alertnessMax'.
+		else
+			this.alertness = Math.max(0, this.alertness-1); // Decrement alertness down to zero.
+
+		// Stop the damage rate timer if we're no longer alert.
+		if (!this.alertness)
+			this.stopTimer();
+
+		if (this.alertness >= this.alertnessBattleThreshold)
+			this.setState("BATTLE");
+		else if (this.alertness <= this.alertnessPeaceThreshold)
+			this.setState("PEACE");
+
+	}
+	if (this.recordControl == this.recordLength)
+		this.recordControl = 0;
 };
 
 /**
@@ -76,6 +85,7 @@ BattleDetection.prototype.startTimer = function(offset, repeat)
 		error("Called startTimer when there's already an active timer.");
 	}
 
+	this.recordControl = 0;
 	this.damage = 0; // Reset damage counter for the first timer period.
 
 	var data = { "timerRepeat": repeat };
@@ -112,9 +122,10 @@ BattleDetection.prototype.OnGlobalAttacked = function(msg)
 	if (!cmpTargetOwnership || cmpTargetOwnership.GetOwner() <= 0 || cmpTargetOwnership.GetOwner() == cmpPlayer.GetPlayerID())
 		return;
 
-	// If damage rate timer isn't started, start it now.
+	// If the damage rate timer isn't already started, start it now.
 	if (!this.timer)
 		this.startTimer(0, this.interval);
+	// Add damage of this attack to the damage counter.
 	if (msg.damage)
 		this.damage += msg.damage;
 };
