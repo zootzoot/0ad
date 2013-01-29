@@ -103,9 +103,9 @@ BattleDetection.prototype.OnGlobalAttacked = function(msg)
 	var cmpAttackerOwnership = Engine.QueryInterface(msg.attacker, IID_Ownership);
 	if (!cmpAttackerOwnership || cmpAttackerOwnership.GetOwner() != cmpPlayer.GetPlayerID())
 		return;
-	// Don't register attacks dealt against Gaia or invalid player.	
+	// Don't register attacks dealt against Gaia or invalid player or myself.
 	var cmpTargetOwnership = Engine.QueryInterface(msg.target, IID_Ownership);
-	if (!cmpTargetOwnership || cmpTargetOwnership.GetOwner() <= 0)
+	if (!cmpTargetOwnership || cmpTargetOwnership.GetOwner() <= 0 || cmpTargetOwnership.GetOwner() == cmpPlayer.GetPlayerID())
 		return;
 
 	if (msg.damage)
