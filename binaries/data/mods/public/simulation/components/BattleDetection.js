@@ -17,8 +17,6 @@ BattleDetection.prototype.Init = function()
 	this.damage = 0; // Accumulative damage dealt over the current timer period.
 	this.damageRate = 0; // Damage rate. Total damage dealt over the previous timer period per unit 'interval'.
 	this.alertness = 0; // Alertness level. Incremented if damage rate exceeds 'damageRateThreshold' over a given timer period and decremented if it does not.
-
-	this.StartTimer(0, this.interval);
 };
 
 BattleDetection.prototype.setState = function(state)
@@ -36,6 +34,10 @@ BattleDetection.prototype.updateAlertness = function()
 		this.alertness = Math.min(this.alertnessMax, this.alertness+1); // Increment alertness up to 'alertnessMax'.
 	else
 		this.alertness = Math.max(0, this.alertness-1); // Decrement alertness down to zero.
+
+	// Stop damage rate timer if we're no longer alert.
+	if (!this.alertness)
+		this.stopTimer();
 
 	if (this.alertness >= this.alertnessBattleThreshold)
 		this.setState("BATTLE");
@@ -62,17 +64,19 @@ BattleDetection.prototype.TimerHandler = function(data, lateness)
 };
 
 /**
- * Set up the BattleDetection timer to run after 'offset' msecs, and then optionally
- * every 'repeat' msecs until StopTimer is called, if 'repeat' is set. A "Timer" message
+ * Set up the damage rate timer to run after 'offset' msecs, and then optionally
+ * every 'repeat' msecs until stopTimer is called, if 'repeat' is set. A "Timer" message
  * will be sent each time the timer runs. Must not be called if a timer is already active.
  */
-BattleDetection.prototype.StartTimer = function(offset, repeat)
+BattleDetection.prototype.startTimer = function(offset, repeat)
 {
 	if (this.timer)
 	{
-		this.StopTimer();
-		error("Called StartTimer when there's already an active timer.");
+		this.stopTimer();
+		error("Called startTimer when there's already an active timer.");
 	}
+
+	this.damage = 0; // Reset damage counter for the first timer period.
 
 	var data = { "timerRepeat": repeat };
 
@@ -84,9 +88,9 @@ BattleDetection.prototype.StartTimer = function(offset, repeat)
 };
 
 /**
- * Stop the current BattleDetection timer.
+ * Stop the current damage rate timer.
  */
-BattleDetection.prototype.StopTimer = function()
+BattleDetection.prototype.stopTimer = function()
 {
 	if (!this.timer)
 		return;
@@ -108,6 +112,9 @@ BattleDetection.prototype.OnGlobalAttacked = function(msg)
 	if (!cmpTargetOwnership || cmpTargetOwnership.GetOwner() <= 0 || cmpTargetOwnership.GetOwner() == cmpPlayer.GetPlayerID())
 		return;
 
+	// If damage rate timer isn't started, start it now.
+	if (!this.timer)
+		this.startTimer(0, this.interval);
 	if (msg.damage)
 		this.damage += msg.damage;
 };
