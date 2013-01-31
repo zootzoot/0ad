@@ -74,13 +74,14 @@ Player.prototype.GetColour = function()
 	return this.colour;
 };
 
+// Try reserving num population slots. Returns num if successful or the inverse of the number of missing slots if failed.
 Player.prototype.TryReservePopulationSlots = function(num)
 {
 	if (num != 0 && num > (this.GetPopulationLimit() - this.GetPopulationCount()))
-		return false;
+		return (this.GetPopulationLimit() - this.GetPopulationCount()) - num;
 
 	this.popUsed += num;
-	return true;
+	return num;
 };
 
 Player.prototype.UnReservePopulationSlots = function(num)

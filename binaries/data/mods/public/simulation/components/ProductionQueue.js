@@ -371,6 +371,7 @@ ProductionQueue.prototype.GetQueue = function()
 			"unitTemplate": item.unitTemplate,
 			"technologyTemplate": item.technologyTemplate,
 			"count": item.count,
+			"slots": item.slots,
 			"progress": 1-(item.timeRemaining/item.timeTotal),
 			"metadata": item.metadata,
 		});
@@ -549,7 +550,8 @@ ProductionQueue.prototype.ProgressTimeout = function(data)
 			{
 				// Batch's training hasn't started yet.
 				// Try to reserve the necessary population slots
-				if (item.unitTemplate && !cmpPlayer.TryReservePopulationSlots(item.population * item.count))
+				item.slots = cmpPlayer.TryReservePopulationSlots(item.population * item.count);
+				if (item.unitTemplate && item.slots < 0)
 				{
 					// No slots available - don't train this batch now
 					// (we'll try again on the next timeout)

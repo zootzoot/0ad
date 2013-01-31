@@ -385,6 +385,11 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 
 			case QUEUE:
 				var tooltip = getEntityNames(template);
+				if (item.slots < 0)
+				{
+					tooltip += "\n[color=\"red\"]Insufficient population capacity:\n[/color]"+getCostComponentDisplayName("population")+" "+Math.abs(item.slots);
+				}
+
 				var progress = Math.round(item.progress*100) + "%";
 				getGUIObjectByName("unit"+guiName+"Count["+i+"]").caption = (item.count > 1 ? item.count : "");
 
