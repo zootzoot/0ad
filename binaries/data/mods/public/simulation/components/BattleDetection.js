@@ -3,47 +3,34 @@ function BattleDetection() {}
 BattleDetection.prototype.Schema =
 	"<a:help>Detects the occurence of battles.</a:help>" +
 	"<a:example/>" +
-	"<optional>" +
-        "<element name='TimerInterval' a:help='Duration of one timer period. Interval over which damage should be recorded in milliseconds.'>" +
-                "<data type='positiveInteger'/>" +
-        "</element>" +
-	"</optional>" +
-	"<optional>" +
-        "<element name='RecordLength' a:help='Record length. Number of timer cycles over which damage rate should be calculated.'>" +
-                "<data type='positiveInteger'/>" +
-        "</element>" +
-	"</optional>" +
-	"<optional>" +
-        "<element name='DamageRateThreshold' a:help='Damage rate at which alertness is increased.'>" +
-                "<ref name='positiveDecimal'/>" +
-        "</element>" +
-	"</optional>" +
-	"<optional>" +
-        "<element name='AlertnessBattleThreshold' a:help='Alertness at which the player is considered in battle.'>" +
-                "<ref name='positiveDecimal'/>" +
-        "</element>" +
-	"</optional>" +
-	"<optional>" +
-        "<element name='AlertnessPeaceThreshold' a:help='Alertness at which the player is considered at peace.'>" +
-                "<ref name='nonNegativeDecimal'/>" +
-        "</element>" +
-	"</optional>" +
-	"<optional>" +
-        "<element name='AlertnessMax' a:help='Maximum alertness level.'>" +
-                "<ref name='positiveDecimal'/>" +
-        "</element>" +
-	"</optional>";
+	"<element name='TimerInterval' a:help='Duration of one timer period. Interval over which damage should be recorded in milliseconds.'>" +
+		"<data type='positiveInteger'/>" +
+	"</element>" +
+	"<element name='RecordLength' a:help='Record length. Number of timer cycles over which damage rate should be calculated.'>" +
+		"<data type='positiveInteger'/>" +
+	"</element>" +
+	"<element name='DamageRateThreshold' a:help='Damage rate at which alertness is increased.'>" +
+		"<ref name='positiveDecimal'/>" +
+	"</element>" +
+	"<element name='AlertnessBattleThreshold' a:help='Alertness at which the player is considered in battle.'>" +
+		"<ref name='positiveDecimal'/>" +
+	"</element>" +
+	"<element name='AlertnessPeaceThreshold' a:help='Alertness at which the player is considered at peace.'>" +
+		"<ref name='nonNegativeDecimal'/>" +
+	"</element>" +
+	"<element name='AlertnessMax' a:help='Maximum alertness level.'>" +
+		"<ref name='positiveDecimal'/>" +
+	"</element>";
 
 BattleDetection.prototype.Init = function()
 {
-	// Load values from template if one is defined.
-	var t = (this.template ? this.template : {} );
-	this.interval = (t.TimerInterval ? Number(this.template.TimerInterval) : 0.1 * 1000);
-	this.recordLength = (t.RecordLength ? Number(t.RecordLength) : 25);
-	this.damageRateThreshold = (t.DamageRateThreshold ? Number(t.DamageRateThreshold) : 0.04);
-	this.alertnessBattleThreshold = (t.AlertnessBattleThreshold ? Number(t.AlertnessBattleThreshold) : 4);
-	this.alertnessPeaceThreshold = (t.AlertnessPeaceThreshold ? Number(t.AlertnessPeaceThreshold) : 0);
-	this.alertnessMax = (t.AlertnessMax ? Number(t.AlertnessMax) : 8);
+	// Load values from template.
+	this.interval = Number(this.template.TimerInterval);
+	this.recordLength = Number(this.template.RecordLength);
+	this.damageRateThreshold = Number(this.template.DamageRateThreshold);
+	this.alertnessBattleThreshold = Number(this.template.AlertnessBattleThreshold);
+	this.alertnessPeaceThreshold = Number(this.template.AlertnessPeaceThreshold);
+	this.alertnessMax = Number(this.template.AlertnessMax);
 
 	// Initialize variables.
 	this.damage = 0; // Damage counter. Accumulative damage done over the current timer period.
