@@ -66,7 +66,7 @@ BattleDetection.prototype.TimerHandler = function(data, lateness)
 	this.damage = 0; // Reset damage counter for the next timer period.
 
 	// Always update alertness if not already alert, or once per 'recordLength' otherwise.
-	if (!this.alertness || this.recordControl++ == this.recordLength)
+	if (!this.alertness || this.recordControl++ == this.recordLength-1)
 	{
 		var recordDamage = this.damageRecord.reduce(function(a, b) {return a + b;}, 0); // Sum up all values in the damage record.
 		var damageRate = recordDamage / (this.recordLength * this.interval);
@@ -86,7 +86,7 @@ BattleDetection.prototype.TimerHandler = function(data, lateness)
 			this.setState("PEACE");
 
 	}
-	if (this.recordControl > this.recordLength)
+	if (this.recordControl > this.recordLength-1)
 		this.recordControl = 0;
 };
 
