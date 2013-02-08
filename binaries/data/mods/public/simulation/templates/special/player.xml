@@ -14,7 +14,7 @@
   <TechnologyManager/>
   <BattleDetection>
     <TimerInterval>200</TimerInterval>
-    <RecordLength>25</RecordLength>
+    <RecordLength>12</RecordLength>
     <DamageRateThreshold>0.04</DamageRateThreshold>
     <AlertnessBattleThreshold>4</AlertnessBattleThreshold>
     <AlertnessPeaceThreshold>0</AlertnessPeaceThreshold>
