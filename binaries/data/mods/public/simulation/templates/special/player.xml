@@ -13,7 +13,7 @@
   <StatisticsTracker/>
   <TechnologyManager/>
   <BattleDetection>
-    <TimerInterval>100</TimerInterval>
+    <TimerInterval>200</TimerInterval>
     <RecordLength>25</RecordLength>
     <DamageRateThreshold>0.04</DamageRateThreshold>
     <AlertnessBattleThreshold>4</AlertnessBattleThreshold>
