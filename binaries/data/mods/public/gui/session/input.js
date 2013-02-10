@@ -1914,7 +1914,6 @@ function findIdleUnit(classes)
 			else
 			{
 				g_Selection.addList([lastIdleUnit]);
-				Engine.CameraFollow(lastIdleUnit);
 				return;
 			}
 
