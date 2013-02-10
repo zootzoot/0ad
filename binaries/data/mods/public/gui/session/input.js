@@ -1914,7 +1914,8 @@ function findIdleUnit(classes)
 			else
 			{
 				g_Selection.addList([lastIdleUnit]);
-				Engine.CameraFollow(lastIdleUnit);
+				var focusTarget = GetEntityState(lastIdleUnit).position;
+				Engine.CameraMoveTo(focusTarget.x, focusTarget.z)
 				return;
 			}
 
