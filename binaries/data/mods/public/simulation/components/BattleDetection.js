@@ -148,3 +148,4 @@ BattleDetection.prototype.OnGlobalAttacked = function(msg)
 };
 
 Engine.RegisterComponentType(IID_BattleDetection, "BattleDetection", BattleDetection);
+
