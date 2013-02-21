@@ -42,6 +42,7 @@ ProductionQueue.prototype.Init = function()
 	//     "player": 1, // who paid for this batch; we need this to cope with refunds cleanly
 	//     "unitTemplate": "units/example",
 	//     "count": 10,
+	//     "neededSlots": 3, // number of population slots missing for production to begin
 	//     "resources": { "wood": 100, ... },	// resources per unit, multiply by count to get total
 	//     "population": 1,	// population per unit, multiply by count to get total
 	//     "productionStarted": false, // true iff we have reserved population
