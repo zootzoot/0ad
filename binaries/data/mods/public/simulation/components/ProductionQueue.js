@@ -551,7 +551,7 @@ ProductionQueue.prototype.ProgressTimeout = function(data)
 				// Batch's training hasn't started yet.
 				// Try to reserve the necessary population slots
 				item.neededSlots = cmpPlayer.TryReservePopulationSlots(item.population * item.count);
-				if (item.unitTemplate && item.neededSlots)
+				if (item.neededSlots)
 				{
 					// Not enough slots available - don't train this batch now
 					// (we'll try again on the next timeout)
