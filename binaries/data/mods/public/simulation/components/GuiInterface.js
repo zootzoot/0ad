@@ -619,6 +619,20 @@ GuiInterface.prototype.GetBattleState = function(player)
 	return cmpBattleDetection.GetState();
 };
 
+// Returns the last new attack against the player.
+GuiInterface.prototype.GetLastNewAttack = function(player)
+{
+	var cmpAttackDetection = QueryPlayerIDInterface(player, IID_AttackDetection);
+	return cmpAttackDetection.GetLastNewAttack();
+};
+
+// Returns a list of ongoing attacks against the player.
+GuiInterface.prototype.GetIncomingAttacks = function(player)
+{
+	var cmpAttackDetection = QueryPlayerIDInterface(player, IID_AttackDetection);
+	return cmpAttackDetection.GetIncomingAttacks();
+};
+
 // Used to show a red square over GUI elements you can't yet afford.
 GuiInterface.prototype.GetNeededResources = function(player, amounts)
 {
@@ -1719,6 +1733,8 @@ var exposedFunctions = {
 	"CheckTechnologyRequirements": 1,
 	"GetStartedResearch": 1,
 	"GetBattleState": 1,
+	"GetLastNewAttack": 1,
+	"GetIncomingAttacks": 1,
 	"GetNeededResources": 1,
 	"GetNextNotification": 1,
 

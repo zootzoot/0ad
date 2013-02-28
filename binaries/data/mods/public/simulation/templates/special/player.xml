@@ -12,6 +12,7 @@
   <Player/>
   <StatisticsTracker/>
   <TechnologyManager/>
+  <AttackDetection/>
   <BattleDetection>
     <TimerInterval>200</TimerInterval>
     <RecordLength>12</RecordLength>

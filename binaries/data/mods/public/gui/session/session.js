@@ -20,6 +20,9 @@ var g_ShowAllStatusBars = false;
 // (this is used to support population counter blinking)
 var g_IsTrainingBlocked = false;
 
+// Last attack against the player, used for attack notification.
+var g_LastNewAttack = {};
+
 // Cache EntityStates
 var g_EntityStates = {}; // {id:entState}
 
@@ -382,6 +385,7 @@ function onSimulationUpdate()
 	updateResearchDisplay();
 	updateBuildingPlacementPreview();
 	updateTimeElapsedCounter(simState);
+	updateAttackNotifications();
 
 	// Update music state on basis of battle state.
 	var battleState = Engine.GuiInterfaceCall("GetBattleState", Engine.GetPlayerID());
@@ -528,6 +532,15 @@ function updateTimeElapsedCounter(simState)
 {
 	var timeElapsedCounter = getGUIObjectByName("timeElapsedCounter");
 	timeElapsedCounter.caption = timeToString(simState.timeElapsed);
+}
+
+function updateAttackNotifications()
+{
+	var previousAttackTime = g_LastNewAttack.time ? g_LastNewAttack.time : 0;
+	var lastNewAttack = Engine.GuiInterfaceCall("GetLastNewAttack", Engine.GetPlayerID());
+	if (lastNewAttack.time > previousAttackTime)
+		warn("We're under attack!");
+	g_LastNewAttack = lastNewAttack;
 }
 
 // Toggles the display of status bars for all of the player's entities.
