@@ -78,6 +78,13 @@ function handleNotifications()
 			"amounts": notification.amounts
 		});
 	}
+	else if (notification.type == "attack")
+	{
+		addChatMessage({
+			"type": "attack",
+			"player": notification.player
+		});
+	}
 	else
 	{
 		// Only display notifications directed to this player
@@ -355,6 +362,12 @@ function addChatMessage(msg, playerAssignments)
 		}
 
 		formatted = "[color=\"" + playerColor + "\"]" + username + "[/color] has sent you " + amounts + ".";
+		break;
+	case "attack":
+		if (msg.player != Engine.GetPlayerID()) 
+			return;
+
+		formatted = "We're under attack!";
 		break;
 	case "message":
 		// May have been hidden by the 'team' command.

@@ -13,7 +13,6 @@ AttackDetection.prototype.Init = function()
 	this.suppressionTime = 40 * 1000; // Other attacks within this time will not be registered.
 
 	this.suppressedList = [];
-	this.lastNewAttack = {};
 };
 
 // Utility function for calculating the distance between two attack events.
@@ -66,9 +65,11 @@ AttackDetection.prototype.handleAttack = function(target, attacker)
 		}
 	}
 	
-	this.lastNewAttack = {position:{x: entityPosition.x, z: entityPosition.z}, time: currentTime};
-	Engine.PostMessage(this.entity, MT_AttackDetected, { "player": cmpPlayer.GetPlayerID(), "event": this.lastNewAttack });
-	this.suppressedList.push(deepcopy(this.lastNewAttack));
+	var event = {position:{x: entityPosition.x, z: entityPosition.z}, time: currentTime};
+	this.suppressedList.push(event);
+	Engine.PostMessage(this.entity, MT_AttackDetected, { "player": cmpPlayer.GetPlayerID(), "event": event });
+	var cmpGuiInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
+	cmpGuiInterface.PushNotification({"type": "attack", "player": cmpPlayer.GetPlayerID(), "message": event});
 };
 
 //// Message handlers /////
@@ -79,11 +80,6 @@ AttackDetection.prototype.OnGlobalAttacked = function(msg)
 };
 
 //// Public interface ////
-
-AttackDetection.prototype.GetLastNewAttack = function()
-{
-	return this.lastNewAttack;
-};
 
 AttackDetection.prototype.GetIncomingAttacks = function()
 {
