@@ -80,10 +80,8 @@ function handleNotifications()
 	}
 	else if (notification.type == "attack")
 	{
-		addChatMessage({
-			"type": "attack",
-			"player": notification.player
-		});
+		if (notification.player == Engine.GetPlayerID())
+			Engine.GuiInterfaceCall("PlaySound", { "name":"attacked", "entity": notification.message.target });
 	}
 	else
 	{

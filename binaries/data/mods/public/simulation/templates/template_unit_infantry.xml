@@ -92,6 +92,7 @@
   <Sound>
     <SoundGroups>
       <select>voice/hellenes/civ/civ_male_select.xml</select>
+      <attacked>interface/alarm/alarm_attackplayer.xml</attacked>
       <order_walk>voice/hellenes/civ/civ_male_ack.xml</order_walk>
       <order_attack>voice/hellenes/civ/civ_male_attack.xml</order_attack>
       <order_gather>voice/hellenes/civ/civ_male_ack.xml</order_gather>

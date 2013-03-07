@@ -43,7 +43,7 @@ AttackDetection.prototype.handleAttack = function(target, attacker)
 	if (!cmpPosition || !cmpPosition.IsInWorld())
 		return;
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
-	var event = {position: cmpPosition.GetPosition(), time: cmpTimer.GetTime()};
+	var event = {position: cmpPosition.GetPosition(), time: cmpTimer.GetTime(), target: target};
 
 	for (var i = 0; i < this.suppressedList.length; i++)
 	{
