@@ -23,6 +23,14 @@ AttackDetection.prototype.distance = function(pos1, pos2)
 	return Math.sqrt(Math.pow(xs, 2) + Math.pow(zs, 2));
 }
 
+AttackDetection.prototype.addSuppression = function(event)
+{
+	this.suppressedList.push(event);
+
+	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
+	cmpTimer.SetTimeout(this.entity, IID_AttackDetection, "HandleTimeout", this.suppressionTime);
+}
+
 AttackDetection.prototype.handleAttack = function(target, attacker)
 {
 	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
@@ -34,39 +42,25 @@ AttackDetection.prototype.handleAttack = function(target, attacker)
 	var cmpPosition = Engine.QueryInterface(target, IID_Position);
 	if (!cmpPosition || !cmpPosition.IsInWorld())
 		return;
-	var entityPosition = cmpPosition.GetPosition();
-	
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
-	var currentTime = cmpTimer.GetTime();
+	var event = {position: cmpPosition.GetPosition(), time: cmpTimer.GetTime()};
 
 	for (var i = 0; i < this.suppressedList.length; i++)
 	{
-		var event = this.suppressedList[i];
+		var element = this.suppressedList[i];
 		
-		// Check if the current event has timed out.
-		if (currentTime - event.time > this.suppressionTime)
-		{
-			this.suppressedList.splice(i, 1);
-			i--;
-			continue;
-		}
-		
-		// If this is within suppression distance of the event then check if the event should be updated
+		// If the new attack is within suppression distance of this element then check if the element should be updated
 		// and then return.
-		var dist = this.distance(event.position, entityPosition);
+		var dist = this.distance(element.position, event.position);
 		if (dist < this.suppressionRange)
 		{
 			if (dist < this.suppressionTransferRange)
-			{
-				event.position = {x: entityPosition.x, z: entityPosition.z};
-				event.time = currentTime;
-			}
+				element = event;
 			return;
 		}
 	}
 	
-	var event = {position:{x: entityPosition.x, z: entityPosition.z}, time: currentTime};
-	this.suppressedList.push(event);
+	this.addSuppression(event);
 	Engine.PostMessage(this.entity, MT_AttackDetected, { "player": cmpPlayer.GetPlayerID(), "event": event });
 	var cmpGuiInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
 	cmpGuiInterface.PushNotification({"type": "attack", "player": cmpPlayer.GetPlayerID(), "message": event});
@@ -79,7 +73,24 @@ AttackDetection.prototype.OnGlobalAttacked = function(msg)
 	this.handleAttack(msg.target, msg.attacker);
 };
 
-//// Public interface ////
+//// External interface ////
+
+AttackDetection.prototype.HandleTimeout = function()
+{
+	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
+	for (var i = 0; i < this.suppressedList.length; i++)
+	{
+		var event = this.suppressedList[i];
+		
+		// Check if this event has timed out.
+		if (cmpTimer.GetTime() - event.time >= this.suppressionTime)
+		{
+			this.suppressedList.splice(i, 1);
+			i--;
+			return;
+		}
+	}
+};
 
 AttackDetection.prototype.GetIncomingAttacks = function()
 {
