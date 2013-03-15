@@ -634,13 +634,13 @@ MilitaryAttackManager.prototype.update = function(gameState, queues, events) {
 						
 						this.upcomingAttacks[attackType].splice(i--,1);
 					} else if (updateStep === 2) {
-						var chatText = "I am launching an attack against " + gameState.sharedScript.playersData[attack.targetPlayer].name;
+						var chatText = "I am launching an attack against " + gameState.sharedScript.playersData[attack.targetPlayer].name + ".";
 						if (Math.random() < 0.2)
-							chatText = "Attacking " + gameState.sharedScript.playersData[attack.targetPlayer].name;
+							chatText = "Attacking " + gameState.sharedScript.playersData[attack.targetPlayer].name + ".";
 						else if (Math.random() < 0.3)
-							chatText = "Starting to attack " + gameState.sharedScript.playersData[attack.targetPlayer].name;
+							chatText = "Starting to attack " + gameState.sharedScript.playersData[attack.targetPlayer].name + ".";
 						else if (Math.random() < 0.3)
-							chatText = "I'm starting an attack against " + gameState.sharedScript.playersData[attack.targetPlayer].name;
+							chatText = "I'm starting an attack against " + gameState.sharedScript.playersData[attack.targetPlayer].name + ".";
 						gameState.ai.chatTeam(chatText);
 						debug ("Military Manager: Starting " +attack.getType() +" plan " +attack.getName());
 						attack.StartAttack(gameState,this);
