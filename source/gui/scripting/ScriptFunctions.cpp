@@ -23,7 +23,7 @@
 #include "graphics/GameView.h"
 #include "graphics/MapReader.h"
 #include "gui/GUIManager.h"
-#include "gui/Minimap.h"
+#include "gui/MiniMap.h"
 #include "lib/timer.h"
 #include "lib/utf8.h"
 #include "lib/sysdep/sysdep.h"
