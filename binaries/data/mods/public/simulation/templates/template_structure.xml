@@ -85,6 +85,7 @@
       <select>interface/select/building/sel_universal.xml</select>
       <constructed>interface/complete/building/complete_universal.xml</constructed>
       <death>attack/destruction/building_collapse_large.xml</death>
+      <attacked>interface/alarm/alarm_attackplayer.xml</attacked>   
     </SoundGroups>
   </Sound>
   <StatusBars>
