@@ -18,8 +18,8 @@
 #ifndef INCLUDED_MINIMAP
 #define INCLUDED_MINIMAP
 
-// std
-#include <unordered_map>
+// boost
+#include <boost/unordered_map.hpp>
 
 // gui
 #include "gui/GUI.h"
@@ -31,7 +31,7 @@ class CCamera;
 class CTerrain;
 
 // Typedefs
-typedef	std::unordered_map<entity_id_t, int> map_Ping;
+typedef	boost::unordered_map<entity_id_t, int> map_Ping;
 
 // Pinging constants
 // Entity not pinged after this many turns if it wasn't added to ping map in between
