@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -23,6 +23,7 @@
 #include "graphics/GameView.h"
 #include "graphics/MapReader.h"
 #include "gui/GUIManager.h"
+#include "gui/Minimap.h"
 #include "lib/timer.h"
 #include "lib/utf8.h"
 #include "lib/sysdep/sysdep.h"
@@ -607,6 +608,22 @@ void SetBoundingBoxDebugOverlay(void* UNUSED(cbdata), bool enabled)
 	ICmpSelectable::ms_EnableDebugOverlays = enabled;
 }
 
+/**
+ * Ping the minimap at the location of the passed entity to indicate something
+ * (currently an attack)
+ * @param entityid unit id to ping
+ */
+void PingMinimap(void* cbdata, entity_id_t entityId)
+{
+	LOGWARNING(L"Ping got from E:%d", entityId);
+
+	CGUIManager* guiManager = static_cast<CGUIManager*> (cbdata);
+	CMiniMap* miniMap = static_cast<CMiniMap*>(guiManager->FindObjectByName("minimap"));
+
+	miniMap->AddPing(entityId);
+
+}
+
 } // namespace
 
 void GuiScriptingInit(ScriptInterface& scriptInterface)
@@ -677,6 +694,9 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 	// Splash screen functions
 	scriptInterface.RegisterFunction<bool, &IsSplashScreenEnabled>("IsSplashScreenEnabled");
 	scriptInterface.RegisterFunction<void, bool, &SetSplashScreenEnabled>("SetSplashScreenEnabled");
+
+	// Minimap functions
+	scriptInterface.RegisterFunction<void, entity_id_t, &PingMinimap>("PingMinimap");
 
 	// Development/debugging functions
 	scriptInterface.RegisterFunction<void, float, &SetSimRate>("SetSimRate");
