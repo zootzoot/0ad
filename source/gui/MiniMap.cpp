@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -35,6 +35,7 @@
 #include "ps/Game.h"
 #include "ps/Profile.h"
 #include "ps/World.h"
+#include "ps/CLogger.h" //added
 #include "renderer/Renderer.h"
 #include "renderer/WaterManager.h"
 #include "scriptinterface/ScriptInterface.h"
@@ -69,6 +70,8 @@ CMiniMap::CMiniMap() :
 		m_ShallowPassageHeight = pathingSettings.GetChild("default").GetChild("MaxWaterDepth").ToFloat();
 	else
 		m_ShallowPassageHeight = 0.0f;
+
+	m_ChangePingColor = 0;
 }
 
 CMiniMap::~CMiniMap()
@@ -248,6 +251,10 @@ void CMiniMap::DrawViewRect()
 	glDisable(GL_SCISSOR_TEST);
 	glDisable(GL_LINE_SMOOTH);
 	glLineWidth(1.0f);
+}
+
+void CMiniMap::AddPing(entity_id_t entityId) {
+	m_EntitiesToPing.insert(std::make_pair<entity_id_t, int>(entityId, MAX_PING_TURNS));
 }
 
 struct MinimapUnitVertex
@@ -456,6 +463,13 @@ void CMiniMap::Draw()
 	std::vector<MinimapUnitVertex> vertexArray;
 	vertexArray.reserve(ents.size());
 
+	// This is ued to remove dead entities from m_EntitiesToPing
+	// All existing entities are found at least once in the loop below.
+	// If atLeastOneEntityFound is still false after the loop and
+	// m_EntitiesToPing.size() > 0 then there is a dead entity lying around in the map,
+	// so clear the map.
+	bool atLeastOneEntityFound = false;
+
 	for (CSimulation2::InterfaceList::const_iterator it = ents.begin(); it != ents.end(); ++it)
 	{
 		MinimapUnitVertex v;
@@ -466,12 +480,69 @@ void CMiniMap::Draw()
 			ICmpRangeManager::ELosVisibility vis = cmpRangeManager->GetLosVisibility(it->first, g_Game->GetPlayerID());
 			if (vis != ICmpRangeManager::VIS_HIDDEN)
 			{
-				v.a = 255;
+
 				v.x = posX.ToFloat()*sx;
 				v.y = -posZ.ToFloat()*sy;
+
+				// Try to find the current entityId in the ping map
+				map_Ping::iterator pingIter = m_EntitiesToPing.find (it->first);
+
+				if ( pingIter != m_EntitiesToPing.end() ) {
+					atLeastOneEntityFound = true;
+
+					// Check if this entity has run its pinging course & should be removed
+					if (pingIter->second <=0) {
+						// Yes, remove it
+						m_EntitiesToPing.erase (it->first);
+					}
+					else {
+						// No ?, then reduce ping count, so the pinging eventually stops
+						--(pingIter->second);
+					}
+
+					// Override the normal rendering of the entity with the ping color
+					// Note: If the pinged entity's dot is rendered over by another entity's
+					// dot then it will be invisible & the ping will be not be seen.
+					// We can try to move the pinged dots towards the end in the vertexArray
+					// Keep 2 pointers and insert pinged dots at end, unpinged at current position
+					if (m_ChangePingColor > PING_DURATION/2) { // only if it should be
+						v.a = 255;
+						v.r = 255; // bright red
+						v.g = 50;
+						v.b = 50;
+					}
+				}
+
 				vertexArray.push_back(v);
+
+			}
+			else {
+				// Note: If an entity is hidden then its never searched in m_EntitiesToPing
+				// & thus its ping count is not reduced. These skipped entities must have
+				// their count reduced here if they are present in m_EntitiesToPing at all
+
+				map_Ping::iterator pingIter = m_EntitiesToPing.find (it->first);
+
+				if ( pingIter != m_EntitiesToPing.end() ) {
+					atLeastOneEntityFound = true;
+
+					if (pingIter->second <=0) {
+						m_EntitiesToPing.erase (it->first);
+					}
+					else {
+						--(pingIter->second);
+					}
+				}
 			}
 		}
+	}
+
+	// Cycle the ping color counter as needed
+	m_ChangePingColor = (m_ChangePingColor + 1) > PING_DURATION ? 0 : (m_ChangePingColor + 1);
+
+	// Clear the dead entities
+	if (!atLeastOneEntityFound && m_EntitiesToPing.size() > 0) {
+		m_EntitiesToPing.clear();
 	}
 
 	if (!vertexArray.empty())
@@ -497,7 +568,7 @@ void CMiniMap::Draw()
 	}
 
 	PROFILE_END("minimap units");
-	
+
 	if (g_Renderer.GetRenderPath() == CRenderer::RP_SHADER)
 	{
 		tech->EndPass();
@@ -630,4 +701,5 @@ void CMiniMap::Destroy()
 
 	delete[] m_TerrainData;
 	m_TerrainData = 0;
+	m_EntitiesToPing.clear();
 }
