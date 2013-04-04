@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -18,10 +18,26 @@
 #ifndef INCLUDED_MINIMAP
 #define INCLUDED_MINIMAP
 
+// std
+#include <unordered_map>
+
+// gui
 #include "gui/GUI.h"
+
+// types
+#include "simulation2/system/Entity.h"
 
 class CCamera;
 class CTerrain;
+
+// Typedefs
+typedef	std::unordered_map<entity_id_t, int> map_Ping;
+
+// Pinging constants
+// Entity not pinged after this many turns if it wasn't added to ping map in between
+const unsigned int MAX_PING_TURNS = 3000;
+// Controls blink duration of the ping, smaller means higher ping frequency
+const unsigned int PING_DURATION = 50;
 
 class CMiniMap : public IGUIObject
 {
@@ -29,6 +45,16 @@ class CMiniMap : public IGUIObject
 public:
 	CMiniMap();
 	virtual ~CMiniMap();
+
+	/**
+	 * Adds an entity to the list of entities to be pinged
+	 * The entity will no longer be pinged after a timeout if not added again.
+	 * The ping map m_EntitiesToPing may contain entity ids even after the entity is dead,
+	 * but it will be removed after MAX_PING_TURNS
+	 * @param entityid id to ping
+	 */
+	 void AddPing(entity_id_t entityId);
+
 protected:
 	virtual void Draw();
 
@@ -80,6 +106,12 @@ protected:
 	
 	// maximal water height to allow the passage of a unit (for underwater shallows).
 	float m_ShallowPassageHeight;
+
+	// A hashmap for storing entities to ping, enables O(1) lookup
+	map_Ping m_EntitiesToPing;
+
+	// For tracking the ping color
+	unsigned int m_ChangePingColor;
 
 	void DrawTexture(float coordMax, float angle, float x, float y, float x2, float y2, float z);
 
