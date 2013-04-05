@@ -45,6 +45,8 @@ AttackDetection.prototype.handleAttack = function(target, attacker)
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
 	var event = {position: cmpPosition.GetPosition(), time: cmpTimer.GetTime(), target: target};
 
+	Engine.PostMessage(target, MT_EntityAttacked, event);
+
 	for (var i = 0; i < this.suppressedList.length; i++)
 	{
 		var element = this.suppressedList[i];
