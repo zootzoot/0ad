@@ -83,7 +83,6 @@ function handleNotifications()
 		if (notification.player == Engine.GetPlayerID())
 		{
 			Engine.GuiInterfaceCall("PlaySound", { "name":"attacked", "entity": notification.message.target });
-			Engine.PingMinimap(notification.message.target);
 		}
 	}
 	else
