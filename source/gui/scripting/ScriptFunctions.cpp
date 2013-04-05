@@ -527,6 +527,11 @@ void SetSimRate(void* UNUSED(cbdata), float rate)
 	g_Game->SetSimRate(rate);
 }
 
+float GetSimRate(void* UNUSED(cbdata))
+{
+	return g_Game->GetSimRate();
+}
+
 void SetTurnLength(void* UNUSED(cbdata), int length)
 {
 	if (g_NetServer)
@@ -700,6 +705,7 @@ void GuiScriptingInit(ScriptInterface& scriptInterface)
 
 	// Development/debugging functions
 	scriptInterface.RegisterFunction<void, float, &SetSimRate>("SetSimRate");
+	scriptInterface.RegisterFunction<float, &GetSimRate>("GetSimRate");
 	scriptInterface.RegisterFunction<void, int, &SetTurnLength>("SetTurnLength");
 	scriptInterface.RegisterFunction<void, float, float, float, &SetCameraTarget>("SetCameraTarget");
 	scriptInterface.RegisterFunction<int, &Crash>("Crash");
