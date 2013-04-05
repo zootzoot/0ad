@@ -398,4 +398,23 @@ public:
 	entity_pos_t newRange;
 };
 
+/**
+ * Sent by AttackDetection from JS when an entity is attacked
+ */
+class CMessageEntityAttacked : public CMessage
+{
+public:
+	DEFAULT_MESSAGE_IMPL(EntityAttacked)
+
+	CMessageEntityAttacked(entity_id_t entity, entity_pos_t x, entity_pos_t z, u32 time) :
+	entity(entity), x(x), z(z), time(time)
+	{
+	}
+
+	entity_id_t entity;
+	entity_pos_t x;
+	entity_pos_t z;
+	u32 time;
+};
+
 #endif // INCLUDED_MESSAGETYPES

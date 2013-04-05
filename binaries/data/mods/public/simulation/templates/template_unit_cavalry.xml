@@ -79,6 +79,7 @@
       <walk>actor/mounted/movement/walk.xml</walk>
       <run>actor/mounted/movement/walk.xml</run>
       <attack>attack/weapon/sword.xml</attack>
+      <attacked>interface/alarm/alarm_attackplayer.xml</attacked>
       <death>actor/fauna/death/death_horse.xml</death>
       <trained>interface/alarm/alarm_create_cav.xml</trained>
     </SoundGroups>

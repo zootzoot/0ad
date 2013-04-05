@@ -35,6 +35,12 @@ public:
 	 */
 	virtual bool GetRenderData(u8& r, u8& g, u8& b, entity_pos_t& x, entity_pos_t& z) = 0;
 
+	/**
+	 * Returns true if the unit was attacked. The time parameter is set to the last
+	 * attack time. As simple as that.
+	 */
+	virtual bool GetAttackData(u32& time) = 0;
+
 	DECLARE_INTERFACE_TYPE(Minimap)
 };
 

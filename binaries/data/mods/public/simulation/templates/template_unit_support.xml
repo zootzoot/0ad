@@ -23,6 +23,7 @@
   <Sound>
     <SoundGroups>
       <trained>interface/alarm/alarm_create_worker.xml</trained>
+      <attacked>interface/alarm/alarm_attackplayer.xml</attacked>
     </SoundGroups>
   </Sound>
   <UnitAI>

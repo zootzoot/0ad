@@ -60,6 +60,7 @@
   <Sound>
     <SoundGroups>
       <attack>attack/weapon/sword.xml</attack>
+      <attacked>interface/alarm/alarm_attackplayer.xml</attacked>
       <death>actor/human/death/death.xml</death>
     </SoundGroups>
   </Sound>

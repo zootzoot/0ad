@@ -43,7 +43,7 @@ AttackDetection.prototype.handleAttack = function(target, attacker)
 	if (!cmpPosition || !cmpPosition.IsInWorld())
 		return;
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
-	var event = {position: cmpPosition.GetPosition(), time: cmpTimer.GetTime(), target: target};
+	var event = {target: target, position: cmpPosition.GetPosition(), time: cmpTimer.GetTime()};
 
 	Engine.PostMessage(target, MT_EntityAttacked, event);
 
