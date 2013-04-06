@@ -54,7 +54,7 @@ public:
 
 	// Used by the minimap while pinging this entity to indicate something(currently an attack)
 	// Entity not pinged after MAX_PING_TURNS if it wasn't notified in between
-	static const u32 MAX_PING_FRAMES = 3000;
+	static const u32 MAX_PING_FRAMES = 1000;
 	bool m_PingEntity;
 	u32 m_PingCount;
 
