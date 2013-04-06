@@ -343,8 +343,6 @@ jsval CMessageEntityAttacked::ToJSVal(ScriptInterface& scriptInterface) const
 	TOJSVAL_SETUP();
 	SET_MSG_PROPERTY(entity);
 	SET_MSG_PROPERTY(player);
-	SET_MSG_PROPERTY(x);
-	SET_MSG_PROPERTY(z);
 	SET_MSG_PROPERTY(time);
 	return OBJECT_TO_JSVAL(obj);
 }
@@ -354,10 +352,8 @@ CMessage* CMessageEntityAttacked::FromJSVal(ScriptInterface& scriptInterface, js
 	FROMJSVAL_SETUP();
 	GET_MSG_PROPERTY(entity_id_t, entity);
 	GET_MSG_PROPERTY(entity_id_t, player);
-	GET_MSG_PROPERTY(entity_pos_t, x);
-	GET_MSG_PROPERTY(entity_pos_t, z);
 	GET_MSG_PROPERTY(u32, time);
-	return new CMessageEntityAttacked(entity, player, x, z, time);
+	return new CMessageEntityAttacked(entity, player, time);
 }
 
 ////////////////////////////////////////////////////////////////

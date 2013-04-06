@@ -399,22 +399,20 @@ public:
 };
 
 /**
- * Sent by AttackDetection from JS when an entity is attacked
+ * Sent when an entity is attacked
  */
 class CMessageEntityAttacked : public CMessage
 {
 public:
 	DEFAULT_MESSAGE_IMPL(EntityAttacked)
 
-	CMessageEntityAttacked(entity_id_t entity, entity_id_t player, entity_pos_t x, entity_pos_t z, u32 time) :
-	entity(entity), player(player), x(x), z(z), time(time)
+	CMessageEntityAttacked(entity_id_t entity, entity_id_t player, u32 time) :
+	entity(entity), player(player), time(time)
 	{
 	}
 
 	entity_id_t entity;
 	entity_id_t player;
-	entity_pos_t x;
-	entity_pos_t z;
 	u32 time;
 };
 
