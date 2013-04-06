@@ -26,6 +26,7 @@
 
 #include "ps/Overlay.h"
 #include "ps/CLogger.h" //added, remove before commit
+#include "ps/Game.h"
 
 class CCmpMinimap : public ICmpMinimap
 {
@@ -201,13 +202,20 @@ public:
 			{
 				const CMessageEntityAttacked& data = static_cast<const CMessageEntityAttacked&> (msg);
 
+				if (!g_Game)
+					break;
+
+				if(g_Game->GetPlayerID() != data.player)
+					break;
+
 				m_Active = true;
 				m_X = data.x;
 				m_Z = data.z;
 				m_PingEntity = true;
 				m_PingCount = MAX_PING_FRAMES;
 
-				LOGWARNING(L"E:%d, Message received of Attack ! x:%d, z:%d", data.entity, data.x, data.z);
+				LOGWARNING(L"User Player:%d: Message received of Attack on entity %d of player %d at (%d, %d)",
+						g_Game->GetPlayerID(), data.entity, data.player, data.x, data.z);
 
 				break;
 			}
