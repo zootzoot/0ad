@@ -35,7 +35,7 @@
 #include "ps/Game.h"
 #include "ps/Profile.h"
 #include "ps/World.h"
-#include "ps/CLogger.h" //added
+#include "ps/CLogger.h" //added, remove before commit
 #include "renderer/Renderer.h"
 #include "renderer/WaterManager.h"
 #include "scriptinterface/ScriptInterface.h"
@@ -253,10 +253,6 @@ void CMiniMap::DrawViewRect()
 	glLineWidth(1.0f);
 }
 
-void CMiniMap::AddPing(entity_id_t entityId) {
-	m_EntitiesToPing.insert(std::make_pair<entity_id_t, int>(entityId, MAX_PING_TURNS));
-}
-
 struct MinimapUnitVertex
 {
 	u8 r, g, b, a;
@@ -463,13 +459,6 @@ void CMiniMap::Draw()
 	std::vector<MinimapUnitVertex> vertexArray;
 	vertexArray.reserve(ents.size());
 
-	// This is ued to remove dead entities from m_EntitiesToPing
-	// All existing entities are found at least once in the loop below.
-	// If atLeastOneEntityFound is still false after the loop and
-	// m_EntitiesToPing.size() > 0 then there is a dead entity lying around in the map,
-	// so clear the map.
-	bool atLeastOneEntityFound = false;
-
 	for (CSimulation2::InterfaceList::const_iterator it = ents.begin(); it != ents.end(); ++it)
 	{
 		MinimapUnitVertex v;
@@ -480,70 +469,42 @@ void CMiniMap::Draw()
 			ICmpRangeManager::ELosVisibility vis = cmpRangeManager->GetLosVisibility(it->first, g_Game->GetPlayerID());
 			if (vis != ICmpRangeManager::VIS_HIDDEN)
 			{
-
 				v.x = posX.ToFloat()*sx;
 				v.y = -posZ.ToFloat()*sy;
 
-				// Try to find the current entityId in the ping map
-				map_Ping::iterator pingIter = m_EntitiesToPing.find (it->first);
-
-				if ( pingIter != m_EntitiesToPing.end() ) {
-					atLeastOneEntityFound = true;
-
-					// Check if this entity has run its pinging course & should be removed
-					if (pingIter->second <=0) {
-						// Yes, remove it
-						m_EntitiesToPing.erase (it->first);
-					}
-					else {
-						// No ?, then reduce ping count, so the pinging eventually stops
-						--(pingIter->second);
-					}
+				// Check minimap pinging to indicate something
+				if (cmpMinimap->IsEntityPinging()) {
 
 					// Override the normal rendering of the entity with the ping color
 					// Note: If the pinged entity's dot is rendered over by another entity's
 					// dot then it will be invisible & the ping will be not be seen.
 					// We can try to move the pinged dots towards the end in the vertexArray
 					// Keep 2 pointers and insert pinged dots at end, unpinged at current position
-					if (m_ChangePingColor > PING_DURATION/2) { // only if it should be
+					if (m_ChangePingColor > PING_DURATION/2) {
 						v.a = 255;
 						v.r = 255; // bright red
-						v.g = 50;
-						v.b = 50;
+						v.g = 1;
+						v.b = 1;
+					}
+
+					// Must reduce ping count every frame
+					u32 pingCount = cmpMinimap->GetRemainingPingCount();
+					if (pingCount <= 0) {
+						// Also turns off ping flag if 0 passed in
+						cmpMinimap->SetRemainingPingCount(0);
+					}
+					else {
+						cmpMinimap->SetRemainingPingCount(pingCount - 1);
 					}
 				}
 
 				vertexArray.push_back(v);
-
-			}
-			else {
-				// Note: If an entity is hidden then its never searched in m_EntitiesToPing
-				// & thus its ping count is not reduced. These skipped entities must have
-				// their count reduced here if they are present in m_EntitiesToPing at all
-
-				map_Ping::iterator pingIter = m_EntitiesToPing.find (it->first);
-
-				if ( pingIter != m_EntitiesToPing.end() ) {
-					atLeastOneEntityFound = true;
-
-					if (pingIter->second <=0) {
-						m_EntitiesToPing.erase (it->first);
-					}
-					else {
-						--(pingIter->second);
-					}
-				}
 			}
 		}
 	}
 
 	// Cycle the ping color counter as needed
 	m_ChangePingColor = (m_ChangePingColor + 1) > PING_DURATION ? 0 : (m_ChangePingColor + 1);
-
-	// Clear the dead entities
-	if (!atLeastOneEntityFound && m_EntitiesToPing.size() > 0) {
-		m_EntitiesToPing.clear();
-	}
 
 	if (!vertexArray.empty())
 	{
@@ -700,6 +661,5 @@ void CMiniMap::Destroy()
 	}
 
 	delete[] m_TerrainData;
-	m_TerrainData = 0;
-	m_EntitiesToPing.clear();
+	m_TerrainData = 0;	
 }

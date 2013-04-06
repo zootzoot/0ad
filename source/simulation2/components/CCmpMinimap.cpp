@@ -34,6 +34,7 @@ public:
 	{
 		componentManager.SubscribeToMessageType(MT_PositionChanged);
 		componentManager.SubscribeToMessageType(MT_OwnershipChanged);
+		componentManager.SubscribeToMessageType(MT_EntityAttacked);
 	}
 
 	DEFAULT_COMPONENT_ALLOCATOR(Minimap)
@@ -49,9 +50,12 @@ public:
 	bool m_Active;
 	entity_pos_t m_X, m_Z; // cache the latest position for more efficient rendering; only valid when m_Active true
 
-	// Attack info
-	bool m_Attacked;
-	u32 m_AttackedTime;
+
+	// Used by the minimap while pinging this entity to indicate something(currently an attack)
+	// Entity not pinged after MAX_PING_TURNS if it wasn't notified in between
+	static const u32 MAX_PING_FRAMES = 3000;
+	bool m_PingEntity;
+	u32 m_PingCount;
 
 
 
@@ -89,6 +93,7 @@ public:
 	virtual void Init(const CParamNode& paramNode)
 	{
 		m_Active = true;
+		m_PingEntity = false;
 
 		const CParamNode& colour = paramNode.GetChild("Colour");
 		if (colour.IsOk())
@@ -197,10 +202,10 @@ public:
 				const CMessageEntityAttacked& data = static_cast<const CMessageEntityAttacked&> (msg);
 
 				m_Active = true;
-				m_Attacked = true;
 				m_X = data.x;
 				m_Z = data.z;
-				m_AttackedTime = data.time;
+				m_PingEntity = true;
+				m_PingCount = MAX_PING_FRAMES;
 
 				LOGWARNING(L"E:%d, Message received of Attack ! x:%d, z:%d", data.entity, data.x, data.z);
 
@@ -222,13 +227,25 @@ public:
 		return true;
 	}
 
-	virtual bool GetAttackData(u32& time)
+	virtual bool IsEntityPinging(void)
 	{
 		if (!m_Active)
 			return false;
 
-		time = m_AttackedTime;
-		return m_Attacked;
+		return m_PingEntity;
+	}
+
+	virtual u32 GetRemainingPingCount(void)
+	{
+		return m_PingCount;
+	}
+
+	virtual void SetRemainingPingCount(u32 pingCount)
+	{
+		m_PingCount = pingCount;
+
+		if (m_PingCount == 0)
+			m_PingEntity = false;
 	}
 };
 

@@ -36,10 +36,19 @@ public:
 	virtual bool GetRenderData(u8& r, u8& g, u8& b, entity_pos_t& x, entity_pos_t& z) = 0;
 
 	/**
-	 * Returns true if the unit was attacked. The time parameter is set to the last
-	 * attack time. As simple as that.
+	 * Returns true if the unit is pinging.
 	 */
-	virtual bool GetAttackData(u32& time) = 0;
+	virtual bool IsEntityPinging(void) = 0;
+
+	/**
+	 * Returns the current ping count.
+	 */
+	virtual u32 GetRemainingPingCount(void) = 0;
+
+	/**
+	 * Used by the minimap to set the ping count, controls pinging.
+	 */
+	virtual void SetRemainingPingCount(u32 pingCount) = 0;
 
 	DECLARE_INTERFACE_TYPE(Minimap)
 };
