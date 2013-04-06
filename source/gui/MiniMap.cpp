@@ -469,6 +469,7 @@ void CMiniMap::Draw()
 			ICmpRangeManager::ELosVisibility vis = cmpRangeManager->GetLosVisibility(it->first, g_Game->GetPlayerID());
 			if (vis != ICmpRangeManager::VIS_HIDDEN)
 			{
+				v.a = 255;
 				v.x = posX.ToFloat()*sx;
 				v.y = -posZ.ToFloat()*sy;
 
@@ -481,7 +482,6 @@ void CMiniMap::Draw()
 					// We can try to move the pinged dots towards the end in the vertexArray
 					// Keep 2 pointers and insert pinged dots at end, unpinged at current position
 					if (m_ChangePingColor > PING_DURATION/2) {
-						v.a = 255;
 						v.r = 255; // bright red
 						v.g = 1;
 						v.b = 1;
