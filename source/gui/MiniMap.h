@@ -90,7 +90,7 @@ protected:
 	float m_ShallowPassageHeight;
 
 	// For tracking the ping color
-	unsigned int m_ChangePingColor;
+	u32 m_ChangePingColor;
 
 	void DrawTexture(float coordMax, float angle, float x, float y, float x2, float y2, float z);
 
