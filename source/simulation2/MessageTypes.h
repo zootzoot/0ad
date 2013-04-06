@@ -406,14 +406,13 @@ class CMessageEntityAttacked : public CMessage
 public:
 	DEFAULT_MESSAGE_IMPL(EntityAttacked)
 
-	CMessageEntityAttacked(entity_id_t entity, entity_id_t player, u32 time) :
-	entity(entity), player(player), time(time)
+	CMessageEntityAttacked(entity_id_t entity, entity_id_t player) :
+	entity(entity), player(player)
 	{
 	}
 
 	entity_id_t entity;
 	entity_id_t player;
-	u32 time;
 };
 
 #endif // INCLUDED_MESSAGETYPES
