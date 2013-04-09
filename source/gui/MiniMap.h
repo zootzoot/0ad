@@ -18,16 +18,17 @@
 #ifndef INCLUDED_MINIMAP
 #define INCLUDED_MINIMAP
 
-// gui
+// GUI
 #include "gui/GUI.h"
 
-// types
-#include "simulation2/system/Entity.h"
+// Types
+#include "lib/types.h"
 
 class CCamera;
 class CTerrain;
 
-// Pinging constants - Controls blink duration of the ping, smaller means higher ping frequency
+// Pinging constants - Controls blink duration of the ping, smaller means higher
+// ping frequency
 const unsigned int PING_DURATION = 50;
 
 class CMiniMap : public IGUIObject

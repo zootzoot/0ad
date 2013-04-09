@@ -35,7 +35,6 @@
 #include "ps/Game.h"
 #include "ps/Profile.h"
 #include "ps/World.h"
-#include "ps/CLogger.h" //added, remove before commit
 #include "renderer/Renderer.h"
 #include "renderer/WaterManager.h"
 #include "scriptinterface/ScriptInterface.h"
@@ -661,5 +660,5 @@ void CMiniMap::Destroy()
 	}
 
 	delete[] m_TerrainData;
-	m_TerrainData = 0;	
+	m_TerrainData = 0;
 }

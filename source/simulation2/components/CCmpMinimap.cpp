@@ -152,67 +152,65 @@ public:
 	{
 		switch (msg.GetType())
 		{
-			case MT_PositionChanged:
+		case MT_PositionChanged:
+		{
+			const CMessagePositionChanged& data = static_cast<const CMessagePositionChanged&> (msg);
+
+			if (data.inWorld)
 			{
-				const CMessagePositionChanged& data = static_cast<const CMessagePositionChanged&> (msg);
-
-				if (data.inWorld)
-				{
-					m_Active = true;
-					m_X = data.x;
-					m_Z = data.z;
-				}
-				else
-				{
-					m_Active = false;
-				}
-
-				break;
-			}
-
-			case MT_OwnershipChanged:
-			{
-				if (!m_UsePlayerColour)
-					break;
-
-				const CMessageOwnershipChanged& msgData = static_cast<const CMessageOwnershipChanged&> (msg);
-
-				// If there's no new owner (e.g. the unit is dying) then don't try updating the colour
-				if (msgData.to == -1)
-					break;
-
-				// Find the new player's colour
-				CmpPtr<ICmpPlayerManager> cmpPlayerManager(GetSimContext(), SYSTEM_ENTITY);
-				if (!cmpPlayerManager)
-					break;
-				CmpPtr<ICmpPlayer> cmpPlayer(GetSimContext(), cmpPlayerManager->GetPlayerByID(msgData.to));
-				if (!cmpPlayer)
-					break;
-				CColor colour = cmpPlayer->GetColour();
-				m_R = (u8)(colour.r*255.0);
-				m_G = (u8)(colour.g*255.0);
-				m_B = (u8)(colour.b*255.0);
-				// TODO: probably should avoid using floating-point here
-
-				break;
-			}
-
-			case MT_EntityAttacked:
-			{
-				const CMessageEntityAttacked& data = static_cast<const CMessageEntityAttacked&> (msg);
-
-				if (!g_Game)
-					break;
-
-				if(g_Game->GetPlayerID() != (int)data.player)
-					break;
-
 				m_Active = true;
-				m_PingEntity = true;
-				m_PingCount = MAX_PING_FRAMES;
-
-				break;
+				m_X = data.x;
+				m_Z = data.z;
 			}
+			else
+			{
+				m_Active = false;
+			}
+
+			break;
+		}
+		case MT_OwnershipChanged:
+		{
+			if (!m_UsePlayerColour)
+				break;
+
+			const CMessageOwnershipChanged& msgData = static_cast<const CMessageOwnershipChanged&> (msg);
+
+			// If there's no new owner (e.g. the unit is dying) then don't try updating the colour
+			if (msgData.to == -1)
+				break;
+
+			// Find the new player's colour
+			CmpPtr<ICmpPlayerManager> cmpPlayerManager(GetSimContext(), SYSTEM_ENTITY);
+			if (!cmpPlayerManager)
+				break;
+			CmpPtr<ICmpPlayer> cmpPlayer(GetSimContext(), cmpPlayerManager->GetPlayerByID(msgData.to));
+			if (!cmpPlayer)
+				break;
+			CColor colour = cmpPlayer->GetColour();
+			m_R = (u8)(colour.r*255.0);
+			m_G = (u8)(colour.g*255.0);
+			m_B = (u8)(colour.b*255.0);
+			// TODO: probably should avoid using floating-point here
+
+			break;
+		}
+		case MT_EntityAttacked:
+		{
+			const CMessageEntityAttacked& data = static_cast<const CMessageEntityAttacked&> (msg);
+
+			if (!g_Game)
+				break;
+
+			if(g_Game->GetPlayerID() != (int)data.player)
+				break;
+
+			m_Active = true;
+			m_PingEntity = true;
+			m_PingCount = MAX_PING_FRAMES;
+
+			break;
+		}
 		}
 	}
 
