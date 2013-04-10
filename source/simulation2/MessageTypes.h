@@ -399,20 +399,16 @@ public:
 };
 
 /**
- * Sent when an entity is attacked
+ * Sent when an entity is pinged
  */
-class CMessageEntityAttacked : public CMessage
+class CMessagePingOwner : public CMessage
 {
 public:
-	DEFAULT_MESSAGE_IMPL(EntityAttacked)
+	DEFAULT_MESSAGE_IMPL(PingOwner)
 
-	CMessageEntityAttacked(entity_id_t entity, entity_id_t player) :
-	entity(entity), player(player)
+	CMessagePingOwner() 
 	{
 	}
-
-	entity_id_t entity;
-	entity_id_t player;
 };
 
 #endif // INCLUDED_MESSAGETYPES

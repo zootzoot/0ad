@@ -338,20 +338,16 @@ CMessage* CMessageVisionRangeChanged::FromJSVal(ScriptInterface& scriptInterface
 
 ////////////////////////////////
 
-jsval CMessageEntityAttacked::ToJSVal(ScriptInterface& scriptInterface) const
+jsval CMessagePingOwner::ToJSVal(ScriptInterface& scriptInterface) const
 {
 	TOJSVAL_SETUP();
-	SET_MSG_PROPERTY(entity);
-	SET_MSG_PROPERTY(player);
 	return OBJECT_TO_JSVAL(obj);
 }
 
-CMessage* CMessageEntityAttacked::FromJSVal(ScriptInterface& scriptInterface, jsval val)
+CMessage* CMessagePingOwner::FromJSVal(ScriptInterface& UNUSED(scriptInterface), jsval UNUSED(val))
 {
-	FROMJSVAL_SETUP();
-	GET_MSG_PROPERTY(entity_id_t, entity);
-	GET_MSG_PROPERTY(entity_id_t, player);
-	return new CMessageEntityAttacked(entity, player);
+	// FROMJSVAL_SETUP();
+	return new CMessagePingOwner();
 }
 
 ////////////////////////////////////////////////////////////////

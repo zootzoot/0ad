@@ -22,6 +22,7 @@
 
 #include "simulation2/components/ICmpPlayerManager.h"
 #include "simulation2/components/ICmpPlayer.h"
+#include "simulation2/components/ICmpOwnership.h"
 #include "simulation2/MessageTypes.h"
 
 #include "ps/Overlay.h"
@@ -34,7 +35,7 @@ public:
 	{
 		componentManager.SubscribeToMessageType(MT_PositionChanged);
 		componentManager.SubscribeToMessageType(MT_OwnershipChanged);
-		componentManager.SubscribeToMessageType(MT_EntityAttacked);
+		componentManager.SubscribeToMessageType(MT_PingOwner);
 	}
 
 	DEFAULT_COMPONENT_ALLOCATOR(Minimap)
@@ -51,7 +52,7 @@ public:
 	entity_pos_t m_X, m_Z; // cache the latest position for more efficient rendering; only valid when m_Active true
 
 
-	// Used by the minimap while pinging this entity to indicate something(currently an attack)
+	// Used by the minimap while pinging this entity to indicate something (e.g. an attack)
 	// Entity not pinged after MAX_PING_TURNS if it wasn't notified in between
 	static const u32 MAX_PING_FRAMES = 500;
 	bool m_PingEntity;
@@ -195,14 +196,17 @@ public:
 
 			break;
 		}
-		case MT_EntityAttacked:
+		case MT_PingOwner:
 		{
-			const CMessageEntityAttacked& data = static_cast<const CMessageEntityAttacked&> (msg);
+			// UNUSED: const CMessagePingOwner& data = static_cast<const CMessagePingOwner&> (msg);
 
 			if (!g_Game)
 				break;
 
-			if(g_Game->GetPlayerID() != (int)data.player)
+			CmpPtr<ICmpOwnership> cmpOwnership(GetSimContext(), GetEntityId());
+			if (!cmpOwnership)
+				break;
+			if(g_Game->GetPlayerID() != (int)cmpOwnership->GetOwner())
 				break;
 
 			m_Active = true;

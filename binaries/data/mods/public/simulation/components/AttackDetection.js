@@ -45,8 +45,6 @@ AttackDetection.prototype.handleAttack = function(target, attacker)
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
 	var event = {target: target, position: cmpPosition.GetPosition(), time: cmpTimer.GetTime()};
 
-	Engine.PostMessage(target, MT_EntityAttacked, {entity: target, player: cmpOwnership.GetOwner()});
-
 	for (var i = 0; i < this.suppressedList.length; i++)
 	{
 		var element = this.suppressedList[i];
@@ -66,6 +64,16 @@ AttackDetection.prototype.handleAttack = function(target, attacker)
 	Engine.PostMessage(this.entity, MT_AttackDetected, { "player": cmpPlayer.GetPlayerID(), "event": event });
 	var cmpGuiInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
 	cmpGuiInterface.PushNotification({"type": "attack", "player": cmpPlayer.GetPlayerID(), "message": event});
+};
+
+//// Message handlers ////
+
+AttackDetection.prototype.OnGlobalAttacked = function(msg)
+{
+	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
+	var cmpOwnership = Engine.QueryInterface(msg.target, IID_Ownership);
+	if (cmpOwnership.GetOwner() == cmpPlayer.GetPlayerID())
+		Engine.PostMessage(msg.target, MT_PingOwner);
 };
 
 //// External interface ////
