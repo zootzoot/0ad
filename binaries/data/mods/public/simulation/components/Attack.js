@@ -691,7 +691,7 @@ Attack.prototype.CauseDamage = function(data)
 	var cmpDamageReceiver = Engine.QueryInterface(data.target, IID_DamageReceiver);
 	if (!cmpDamageReceiver)
 		return;
-	var targetState = cmpDamageReceiver.TakeDamage(strengths.hack * damageMultiplier, strengths.pierce * damageMultiplier, strengths.crush * damageMultiplier);
+	var targetState = cmpDamageReceiver.TakeDamage(strengths.hack * damageMultiplier, strengths.pierce * damageMultiplier, strengths.crush * damageMultiplier, this.entity);
 	// if target killed pick up loot and credit experience
 	if (targetState.killed == true)
 	{

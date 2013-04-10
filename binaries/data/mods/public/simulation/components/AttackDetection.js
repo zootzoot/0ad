@@ -68,14 +68,17 @@ AttackDetection.prototype.handleAttack = function(target, attacker)
 	cmpGuiInterface.PushNotification({"type": "attack", "player": cmpPlayer.GetPlayerID(), "message": event});
 };
 
-//// Message handlers /////
+//// External interface ////
 
-AttackDetection.prototype.OnGlobalAttacked = function(msg)
+AttackDetection.prototype.AttackAlert = function(target, attacker)
 {
-	this.handleAttack(msg.target, msg.attacker);
+	this.handleAttack(target, attacker);
 };
 
-//// External interface ////
+AttackDetection.prototype.GetSuppressionTime = function()
+{
+	return this.suppressionTime;
+};
 
 AttackDetection.prototype.HandleTimeout = function()
 {
