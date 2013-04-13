@@ -84,6 +84,7 @@
 #include "renderer/ModelRenderer.h"
 #include "scripting/ScriptingHost.h"
 #include "scripting/ScriptGlue.h"
+#include "scriptinterface/DebuggingServer.h"
 #include "scriptinterface/ScriptInterface.h"
 #include "scriptinterface/ScriptStats.h"
 #include "simulation2/Simulation2.h"
@@ -200,12 +201,6 @@ void Render()
 	g_Profiler2.RecordGPUFrameStart();
 
 	ogl_WarnIfError();
-
-	CStr skystring = "255 0 255";
-	CFG_GET_VAL("skycolor", String, skystring);
-	CColor skycol;
-	GUI<CColor>::ParseString(skystring.FromUTF8(), skycol);
-	g_Renderer.SetClearColor(skycol.AsSColor4ub());
 
 	// prepare before starting the renderer frame
 	if (g_Game && g_Game->IsGameStarted())
@@ -448,29 +443,33 @@ static void InitVfs(const CmdLineArgs& args)
 	const size_t cacheSize = ChooseCacheSize();
 	g_VFS = CreateVfs(cacheSize);
 
-	g_VFS->Mount(L"screenshots/", paths.UserData()/"screenshots"/"");
-	g_VFS->Mount(L"saves/", paths.UserData()/"saves"/"", VFS_MOUNT_WATCH);
-	const OsPath readonlyConfig = paths.RData()/"config"/"";
-	g_VFS->Mount(L"config/", readonlyConfig);
-	if(readonlyConfig != paths.Config())
-		g_VFS->Mount(L"config/", paths.Config());
-	g_VFS->Mount(L"cache/", paths.Cache(), VFS_MOUNT_ARCHIVABLE);	// (adding XMBs to archive speeds up subsequent reads)
-
 	std::vector<CStr> mods = args.GetMultiple("mod");
-	mods.push_back("public");
-	if(!args.Has("onlyPublicFiles"))
-		mods.push_back("internal");
+	mods.insert(mods.begin(), "public");
 
-	OsPath modArchivePath = paths.Cache()/"mods";
-	OsPath modLoosePath = paths.RData()/"mods";
+	if (!args.Has("noUserMod"))
+		mods.push_back("user");
+
+	OsPath modPath = paths.RData()/"mods";
+	OsPath modUserPath = paths.UserData()/"mods";
 	for (size_t i = 0; i < mods.size(); ++i)
 	{
 		size_t priority = i+1;	// mods are higher priority than regular mountings, which default to priority 0
 		size_t flags = VFS_MOUNT_WATCH|VFS_MOUNT_ARCHIVABLE|VFS_MOUNT_MUST_EXIST;
 		OsPath modName(mods[i]);
-		g_VFS->Mount(L"", modLoosePath / modName/"", flags, priority);
-		g_VFS->Mount(L"", modArchivePath / modName/"", flags, priority);
+		g_VFS->Mount(L"", modPath / modName/"", flags, priority);
+		g_VFS->Mount(L"", modUserPath / modName/"", flags, priority);
 	}
+
+	// We mount these dirs last as otherwise writing could result in files being placed in a mod's dir.
+	g_VFS->Mount(L"screenshots/", paths.UserData()/"screenshots"/"");
+	g_VFS->Mount(L"saves/", paths.UserData()/"saves"/"", VFS_MOUNT_WATCH);
+	const OsPath readonlyConfig = paths.RData()/"config"/"";
+	// Mounting with highest priority, so that a mod supplied user.cfg is harmless
+	g_VFS->Mount(L"config/", readonlyConfig, 0, (size_t)-1);
+	if(readonlyConfig != paths.Config())
+		g_VFS->Mount(L"config/", paths.Config(), 0, (size_t)-1);
+
+	g_VFS->Mount(L"cache/", paths.Cache(), VFS_MOUNT_ARCHIVABLE);	// (adding XMBs to archive speeds up subsequent reads)
 
 	// note: don't bother with g_VFS->TextRepresentation - directories
 	// haven't yet been populated and are empty.
@@ -694,6 +693,7 @@ void Shutdown(int UNUSED(flags))
 
 	TIMER_BEGIN(L"shutdown ScriptingHost");
 	delete &g_ScriptingHost;
+	delete g_DebuggingServer;
 	TIMER_END(L"shutdown ScriptingHost");
 
 	TIMER_BEGIN(L"shutdown ConfigDB");
@@ -888,10 +888,16 @@ void Init(const CmdLineArgs& args, int UNUSED(flags))
 	CSoundManager::CreateSoundManager();
 #endif
 
-	InitScripting();	// before GUI
-
 	// g_ConfigDB, command line args, globals
 	CONFIG_Init(args);
+	
+	// before scripting 
+	if (g_JSDebuggerEnabled)
+		g_DebuggingServer = new CDebuggingServer();
+
+	InitScripting();	// before GUI
+	
+	g_ConfigDB.RegisterJSConfigDB(); 	// after scripting 
 
 	// Optionally start profiler HTTP output automatically
 	// (By default it's only enabled by a hotkey, for security/performance)
@@ -1187,6 +1193,47 @@ bool Autostart(const CmdLineArgs& args)
 			CStr name = aiArgs[i].AfterFirst(":");
 
 			scriptInterface.SetProperty(player.get(), "AI", std::string(name));
+			scriptInterface.SetProperty(player.get(), "AIDiff", 1);
+			scriptInterface.SetPropertyInt(playerData.get(), playerID-1, player);
+		}
+	}
+	// Set AI difficulty
+	if (args.Has("autostart-aidiff"))
+	{
+		std::vector<CStr> civArgs = args.GetMultiple("autostart-aidiff");
+		for (size_t i = 0; i < civArgs.size(); ++i)
+		{
+			// Instead of overwriting existing player data, modify the array
+			CScriptVal player;
+			if (!scriptInterface.GetPropertyInt(playerData.get(), i, player) || player.undefined())
+			{
+				scriptInterface.Eval("({})", player);
+			}
+			
+			int playerID = civArgs[i].BeforeFirst(":").ToInt();
+			int difficulty = civArgs[i].AfterFirst(":").ToInt();
+			
+			scriptInterface.SetProperty(player.get(), "AIDiff", difficulty);
+			scriptInterface.SetPropertyInt(playerData.get(), playerID-1, player);
+		}
+	}
+	// Set player data for Civs
+	if (args.Has("autostart-civ"))
+	{
+		std::vector<CStr> civArgs = args.GetMultiple("autostart-civ");
+		for (size_t i = 0; i < civArgs.size(); ++i)
+		{
+			// Instead of overwriting existing player data, modify the array
+			CScriptVal player;
+			if (!scriptInterface.GetPropertyInt(playerData.get(), i, player) || player.undefined())
+			{
+				scriptInterface.Eval("({})", player);
+			}
+			
+			int playerID = civArgs[i].BeforeFirst(":").ToInt();
+			CStr name = civArgs[i].AfterFirst(":");
+			
+			scriptInterface.SetProperty(player.get(), "Civ", std::string(name));
 			scriptInterface.SetPropertyInt(playerData.get(), playerID-1, player);
 		}
 	}

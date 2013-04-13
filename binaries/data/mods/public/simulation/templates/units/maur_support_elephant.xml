@@ -27,7 +27,7 @@
     <Classes datatype="tokens">Elephant</Classes>
     <GenericName>Worker Elephant</GenericName>
     <SpecificName>Karmākara Gaja</SpecificName>
-    <Icon>units/cart_champion_cavalry.png</Icon>
+    <Icon>units/maur_support_elephant.png</Icon>
     <History>Support Elephant.</History>
     <Tooltip>Mobile dropsite. Can also assist in constructing buildings.</Tooltip>
   </Identity>
@@ -60,7 +60,7 @@
     </SoundGroups>
   </Sound>
   <UnitMotion>
-    <WalkSpeed>5.0</WalkSpeed>
+    <WalkSpeed>4.0</WalkSpeed>
     <Run>
       <Speed>10.0</Speed>
     </Run>

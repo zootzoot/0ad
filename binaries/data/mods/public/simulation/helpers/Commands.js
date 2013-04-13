@@ -88,6 +88,13 @@ function ProcessCommand(player, cmd)
 		});
 		break;
 
+	case "attack-walk":
+		var entities = FilterEntityList(cmd.entities, player, controlAllUnits);
+		GetFormationUnitAIs(entities, player).forEach(function(cmpUnitAI) {
+			cmpUnitAI.WalkAndFight(cmd.x, cmd.z, cmd.queued);
+		});
+		break;
+
 	case "attack":
 		if (g_DebugCommands && !(IsOwnedByEnemyOfPlayer(player, cmd.target) || IsOwnedByNeutralOfPlayer(player, cmd.target)))
 		{
@@ -526,6 +533,99 @@ function ExtractFormations(ents)
 }
 
 /**
+ * Tries to find the best angle to put a dock at a given position
+ * Taken from GuiInterface.js
+ */
+function GetDockAngle(templateName,x,y)
+{
+	var cmpTemplateMgr = Engine.QueryInterface(SYSTEM_ENTITY, IID_TemplateManager);
+	var template = cmpTemplateMgr.GetTemplate(templateName);
+
+	if (template.BuildRestrictions.Category !== "Dock")
+		return undefined;
+
+	var cmpTerrain = Engine.QueryInterface(SYSTEM_ENTITY, IID_Terrain);
+	var cmpWaterManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_WaterManager);
+	if (!cmpTerrain || !cmpWaterManager)
+	{
+		return undefined;
+	}
+	
+	// Get footprint size
+	var halfSize = 0;
+	if (template.Footprint.Square)
+	{
+		halfSize = Math.max(template.Footprint.Square["@depth"], template.Footprint.Square["@width"])/2;
+	}
+	else if (template.Footprint.Circle)
+	{
+		halfSize = template.Footprint.Circle["@radius"];
+	}
+	
+	/* Find direction of most open water, algorithm:
+	 *	1. Pick points in a circle around dock
+	 *	2. If point is in water, add to array
+	 *	3. Scan array looking for consecutive points
+	 *	4. Find longest sequence of consecutive points
+	 *	5. If sequence equals all points, no direction can be determined,
+	 *		expand search outward and try (1) again
+	 *	6. Calculate angle using average of sequence
+	 */
+	const numPoints = 16;
+	for (var dist = 0; dist < 4; ++dist)
+	{
+		var waterPoints = [];
+		for (var i = 0; i < numPoints; ++i)
+		{
+			var angle = (i/numPoints)*2*Math.PI;
+			var d = halfSize*(dist+1);
+			var nx = x - d*Math.sin(angle);
+			var nz = y + d*Math.cos(angle);
+			
+			if (cmpTerrain.GetGroundLevel(nx, nz) < cmpWaterManager.GetWaterLevel(nx, nz))
+			{
+				waterPoints.push(i);
+			}
+		}
+		var consec = [];
+		var length = waterPoints.length;
+		for (var i = 0; i < length; ++i)
+		{
+			var count = 0;
+			for (var j = 0; j < (length-1); ++j)
+			{
+				if (((waterPoints[(i + j) % length]+1) % numPoints) == waterPoints[(i + j + 1) % length])
+				{
+					++count;
+				}
+				else
+				{
+					break;
+				}
+			}
+			consec[i] = count;
+		}
+		var start = 0;
+		var count = 0;
+		for (var c in consec)
+		{
+			if (consec[c] > count)
+			{
+				start = c;
+				count = consec[c];
+			}
+		}
+		
+		// If we've found a shoreline, stop searching
+		if (count != numPoints-1)
+		{
+			return -(((waterPoints[start] + consec[start]/2) % numPoints)/numPoints*2*Math.PI);
+		}
+	}
+	return undefined;
+}
+
+/**
  * Attempts to construct a building using the specified parameters.
  * Returns true on success, false on failure.
  */
@@ -574,6 +674,11 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 		return false;
 	}
 	
+	// If it's a dock, get the right angle.
+	var angle = GetDockAngle(cmd.template,cmd.x,cmd.z);
+	if (angle !== undefined)
+		cmd.angle = angle;
+	
 	// Move the foundation to the right place
 	var cmpPosition = Engine.QueryInterface(ent, IID_Position);
 	cmpPosition.JumpTo(cmd.x, cmd.z);
@@ -601,22 +706,28 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 	var cmpOwnership = Engine.QueryInterface(ent, IID_Ownership);
 	cmpOwnership.SetOwner(player);
 	
-	// Check whether it's obstructed by other entities or invalid terrain
+	// Check whether building placement is valid
 	var cmpBuildRestrictions = Engine.QueryInterface(ent, IID_BuildRestrictions);
-	if (!cmpBuildRestrictions || !cmpBuildRestrictions.CheckPlacement())
+	if (cmpBuildRestrictions)
 	{
-		if (g_DebugCommands)
+		var ret = cmpBuildRestrictions.CheckPlacement();
+		if (!ret.success)
 		{
-			warn("Invalid command: build restrictions check failed for player "+player+": "+uneval(cmd));
+			if (g_DebugCommands)
+			{
+				warn("Invalid command: build restrictions check failed for player "+player+": "+uneval(cmd));
+			}
+
+			var cmpGuiInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
+			cmpGuiInterface.PushNotification({ "player": player, "message": ret.message });
+			
+			// Remove the foundation because the construction was aborted
+			Engine.DestroyEntity(ent);
+			return false;
 		}
-		
-		var cmpGuiInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
-		cmpGuiInterface.PushNotification({ "player": player, "message": "Building site was obstructed" });
-		
-		// Remove the foundation because the construction was aborted
-		Engine.DestroyEntity(ent);
-		return false;
 	}
+	else
+		error("cmpBuildRestrictions not defined");
 	
 	// Check entity limits
 	var cmpEntityLimits = QueryPlayerIDInterface(player, IID_EntityLimits);
@@ -647,29 +758,6 @@ function TryConstructBuilding(player, cmpPlayer, controlAllUnits, cmd)
 		
 		// Remove the foundation because the construction was aborted 
 		Engine.DestroyEntity(ent); 
-	} 
-	
-	// TODO: AI has no visibility info
-	if (!cmpPlayer.IsAI())
-	{
-		// Check whether it's in a visible or fogged region
-		//	tell GetLosVisibility to force RetainInFog because preview entities set this to false,
-		//	which would show them as hidden instead of fogged
-		var cmpRangeManager = Engine.QueryInterface(SYSTEM_ENTITY, IID_RangeManager);
-		var visible = (cmpRangeManager && cmpRangeManager.GetLosVisibility(ent, player, true) != "hidden");
-		if (!visible)
-		{
-			if (g_DebugCommands)
-			{
-				warn("Invalid command: foundation visibility check failed for player "+player+": "+uneval(cmd));
-			}
-			
-			var cmpGuiInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
-			cmpGuiInterface.PushNotification({ "player": player, "message": "Building site was not visible" });
-			
-			Engine.DestroyEntity(ent);
-			return false;
-		}
 	}
 	
 	// We need the cost after tech modifications
