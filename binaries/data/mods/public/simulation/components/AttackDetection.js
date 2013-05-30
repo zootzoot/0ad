@@ -12,15 +12,17 @@ AttackDetection.prototype.Init = function()
 	this.suppressionRange = 150; // Other attacks within this distance will not be registered.
 	this.suppressionTime = 40 * 1000; // Other attacks within this time will not be registered.
 
+	this.suppressionTransferRangeSquared = this.suppressionTransferRange*this.suppressionTransferRange;
+	this.suppressionRangeSquared = this.suppressionRange*this.suppressionRange;
 	this.suppressedList = [];
 };
 
-// Utility function for calculating the distance between two attack events.
-AttackDetection.prototype.Distance = function(pos1, pos2)
+// Utility function for calculating the squared-distance between two attack events.
+AttackDetection.prototype.SquaredDistance = function(pos1, pos2)
 {
 	var xs = pos2.x - pos1.x;
 	var zs = pos2.z - pos1.z;
-	return Math.sqrt(Math.pow(xs, 2) + Math.pow(zs, 2));
+	return xs*xs + zs*zs;
 };
 
 AttackDetection.prototype.AddSuppression = function(event)
@@ -67,10 +69,10 @@ AttackDetection.prototype.AttackAlert = function(target, attacker)
 		
 		// If the new attack is within suppression distance of this element then check if the element should be updated
 		// and then return.
-		var dist = this.Distance(element.position, event.position);
-		if (dist < this.suppressionRange)
+		var dist = this.SquaredDistance(element.position, event.position);
+		if (dist < this.suppressionRangeSquared)
 		{
-			if (dist < this.suppressionTransferRange)
+			if (dist < this.suppressionTransferRangeSquared)
 				element = event;
 			return;
 		}
