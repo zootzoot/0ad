@@ -46,9 +46,13 @@ AttackDetection.prototype.OnGlobalAttacked = function(msg)
 AttackDetection.prototype.AttackAlert = function(target, attacker)
 {
 	var cmpPlayer = Engine.QueryInterface(this.entity, IID_Player);
-	var cmpOwnership = Engine.QueryInterface(target, IID_Ownership);
-	// Don't register attacks dealt against others.
-	if (cmpPlayer.GetPlayerID() != cmpOwnership.GetOwner())
+	var cmpTargetOwnership = Engine.QueryInterface(target, IID_Ownership);
+	// Don't register attacks dealt against other players.
+	if (cmpTargetOwnership.GetOwner() != cmpPlayer.GetPlayerID())
+		return;
+	var cmpAttackerOwnership = Engine.QueryInterface(attacker, IID_Ownership);
+	// Don't register attacks dealt by myself.
+	if (cmpAttackerOwnership.GetOwner() == cmpPlayer.GetPlayerID())
 		return;
 
 	var cmpPosition = Engine.QueryInterface(target, IID_Position);
