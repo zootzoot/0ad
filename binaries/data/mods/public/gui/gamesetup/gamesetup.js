@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
-const DEFAULT_NETWORKED_MAP = "Punjab 01";
-const DEFAULT_OFFLINE_MAP = "Punjab 01";
+const DEFAULT_NETWORKED_MAP = "Acropolis 01";
+const DEFAULT_OFFLINE_MAP = "Acropolis 01";
 
 // TODO: Move these somewhere like simulation\data\game_types.json, Atlas needs them too
 const VICTORY_TEXT = ["Conquest", "None"];
@@ -851,13 +851,13 @@ function launchGame()
 	// Assign random civilizations to players with that choice 
 	//  (this is synchronized because we're the host) 
 	var cultures = [];
-	for each (civ in g_CivData)
+	for each (var civ in g_CivData)
 		if ((civ.Culture !== undefined)&&(cultures.indexOf(civ.Culture) < 0)&&(civ.SelectableInGameSetup == undefined)||(civ.SelectableInGameSetup))
 			cultures.push(civ.Culture);
 	var allcivs = new Array(cultures.length);
 	for (var i = 0; i < allcivs.length; ++i)
 		allcivs[i] = [];
-	for each (civ in g_CivData)
+	for each (var civ in g_CivData)
 		if ((civ.Culture !== undefined)&&(civ.SelectableInGameSetup == undefined)||(civ.SelectableInGameSetup))
 			allcivs[cultures.indexOf(civ.Culture)].push(civ.Code);
 	

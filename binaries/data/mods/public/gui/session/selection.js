@@ -59,9 +59,13 @@ EntityGroups.prototype.add = function(ents)
 				continue;
 
 			var templateName = entState.template;
-			var template = GetTemplateData(templateName);
-			var key = template.selectionGroupName || templateName;
-			
+			var key = GetTemplateData(templateName).selectionGroupName || templateName;
+
+			// Prefix garrisoned unit's selection name with the player they belong to
+			var index = templateName.indexOf("&");
+			if (index != -1 && key.indexOf("&") == -1)
+				key = templateName.slice(0, index+1) + key;
+
 			if (this.groups[key])
 				this.groups[key] += 1;
 			else
@@ -221,7 +225,7 @@ EntitySelection.prototype.update = function()
 		// Remove deleted units
 		if (!entState)
 		{
-			delete this.selected[ent];	
+			delete this.selected[ent];
 			this.groups.removeEnt(ent);
 			this.dirty = true;
 			continue;

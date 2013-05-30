@@ -43,13 +43,18 @@ void CSoundBase::ReleaseOpenAL()
 {
 	if (m_ALSource != 0)
 	{
-		alSourcei(m_ALSource, AL_BUFFER, 0);
+		AL_CHECK
+		alSourcei(m_ALSource, AL_BUFFER, NULL);
+		AL_CHECK
 		g_SoundManager->ReleaseALSource(m_ALSource);
+		AL_CHECK
 		m_ALSource = 0;
 	}
 	if (m_SoundData != 0)
 	{
+		AL_CHECK
 		CSoundData::ReleaseSoundData(m_SoundData);
+		AL_CHECK
 		m_SoundData = 0;
 	}
 }
@@ -57,11 +62,6 @@ void CSoundBase::ReleaseOpenAL()
 void CSoundBase::Attach(CSoundData* itemData)
 {
 	UNUSED2(itemData);
-}
-bool CSoundBase::CanAttach(CSoundData* itemData)
-{
-	UNUSED2(itemData);
-	return false;
 }
 
 void CSoundBase::ResetVars()
@@ -74,8 +74,8 @@ void CSoundBase::ResetVars()
 	m_EndFadeTime = 0;
 	m_StartVolume = 0;
 	m_EndVolume = 0;
-	m_IsManaged = false;
-	m_TouchTime  = timer_Time();
+	m_ShouldBePlaying = false;
+	m_IsPaused = false;
 	ResetFade();
 }
 
@@ -85,9 +85,13 @@ void CSoundBase::ResetFade()
 	m_EndFadeTime = 0;
 	m_StartVolume = 0;
 	m_EndVolume = 0;
-	m_ShouldBePlaying = false;
+	m_PauseAfterFade = false;
 }
 
+bool CSoundBase::Finished()
+{
+  return !m_ShouldBePlaying && !IsPlaying();
+}
 
 bool CSoundBase::InitOpenAL()
 {
@@ -108,15 +112,9 @@ bool CSoundBase::InitOpenAL()
 	}
 	else
 	{
-//		LOGERROR(L"Source not allocated by SOundManager\n", 0);
+//		LOGERROR(L"Source not allocated by SoundManager\n", 0);
 	}
 	return false;
-}
-
-
-void CSoundBase::SetIsManaged(bool manage)
-{
-	m_IsManaged = manage;
 }
 
 void CSoundBase::SetGain(ALfloat gain)
@@ -140,14 +138,14 @@ void CSoundBase::SetRollOff(ALfloat rolls)
 		AL_CHECK
 		alSourcef(m_ALSource, AL_MAX_DISTANCE, 200.0);
 		AL_CHECK
-   		alSourcef(m_ALSource, AL_ROLLOFF_FACTOR, rolls);
+   	alSourcef(m_ALSource, AL_ROLLOFF_FACTOR, rolls);
 		AL_CHECK
 	}
 }
 
 void CSoundBase::EnsurePlay()
 {
-	if (m_ShouldBePlaying && !IsPlaying())
+	if (m_ShouldBePlaying && !m_IsPaused && !IsPlaying())
 		Play();
 }
 
@@ -193,7 +191,7 @@ bool CSoundBase::IsPlaying()
 	{
 		CScopeLock lock(m_ItemMutex);
 		int proc_state;
-		alGetSourceiv(m_ALSource, AL_SOURCE_STATE, &proc_state);
+		alGetSourcei(m_ALSource, AL_SOURCE_STATE, &proc_state);
 		AL_CHECK
 
 		return (proc_state == AL_PLAYING);
@@ -211,12 +209,6 @@ bool CSoundBase::IdleTask()
 	return true;
 }
 
-void CSoundBase::TouchTimer()
-{
-	if ( IsPlaying() )
-		m_TouchTime  = timer_Time();
-}
-
 void CSoundBase::SetLocation (const CVector3D& position)
 {
 	if ( m_ALSource != 0 )
@@ -230,6 +222,9 @@ void CSoundBase::SetLocation (const CVector3D& position)
 bool CSoundBase::HandleFade()
 {
 	AL_CHECK
+	if (m_ALSource == 0)
+		return true;
+
 	if (m_StartFadeTime != 0)
 	{
 		double currTime = timer_Time();
@@ -238,7 +233,12 @@ bool CSoundBase::HandleFade()
 		ALfloat curGain = ((m_EndVolume - m_StartVolume) * pctDone) + m_StartVolume;
 
 		if  (curGain == 0)
-			Stop();
+		{
+			if ( m_PauseAfterFade )
+				Pause();
+			else
+				Stop();
+		}
 		else if (curGain == m_EndVolume)
 		{
 			if (m_ALSource != 0)
@@ -264,11 +264,6 @@ bool CSoundBase::GetLooping()
 	return m_Looping;
 }
 
-bool CSoundBase::SoundStale()
-{
-	return !m_IsManaged && ( ( timer_Time() - m_TouchTime ) > 120 );
-}
-
 void CSoundBase::SetLooping(bool loops)
 {
 	m_Looping = loops;
@@ -283,8 +278,8 @@ void CSoundBase::Play()
 {
 	CScopeLock lock(m_ItemMutex);
 
-	m_TouchTime  = timer_Time();
 	m_ShouldBePlaying = true;
+	m_IsPaused = false;
 	AL_CHECK
 	if (m_ALSource != 0)
 	{
@@ -306,6 +301,11 @@ void CSoundBase::PlayAndDelete()
 	Play();
 }
 
+void CSoundBase::FadeAndPause(double fadeTime)
+{
+	m_PauseAfterFade = true;
+	FadeToIn(0, fadeTime);
+}
 
 void CSoundBase::FadeAndDelete(double fadeTime)
 {
@@ -323,7 +323,6 @@ void CSoundBase::PlayLoop()
 {
 	if (m_ALSource != 0)
 	{
-		m_TouchTime  = timer_Time();
 		SetLooping(true);
 		Play();
 		AL_CHECK
@@ -335,7 +334,7 @@ void CSoundBase::FadeToIn(ALfloat newVolume, double fadeDuration)
 	if (m_ALSource != 0)
 	{		
 		ALenum proc_state;
-		alGetSourceiv(m_ALSource, AL_SOURCE_STATE, &proc_state);
+		alGetSourcei(m_ALSource, AL_SOURCE_STATE, &proc_state);
 		if (proc_state == AL_PLAYING)
 		{
 			m_StartFadeTime = timer_Time();
@@ -363,17 +362,16 @@ void CSoundBase::Stop()
 	if (m_ALSource != 0)
 	{
 		CScopeLock lock(m_ItemMutex);
-		int proc_state;
-		alSourcei(m_ALSource, AL_LOOPING, AL_FALSE);
-		alGetSourceiv(m_ALSource, AL_SOURCE_STATE, &proc_state);
-		if (proc_state == AL_PLAYING)
-			alSourceStop(m_ALSource);
 
+		AL_CHECK
+		alSourcei(m_ALSource, AL_LOOPING, AL_FALSE);
+		AL_CHECK
+		alSourceStop(m_ALSource);
 		AL_CHECK
 	}
 }
 
-CStrW* CSoundBase::GetName()
+Path* CSoundBase::GetName()
 {
 	if ( m_SoundData )
 		return m_SoundData->GetFileName();
@@ -385,6 +383,7 @@ void CSoundBase::Pause()
 {
   if (m_ALSource != 0)
   {
+		m_IsPaused = true;
     alSourcePause(m_ALSource);
     AL_CHECK
   }

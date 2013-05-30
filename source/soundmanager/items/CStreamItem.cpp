@@ -35,18 +35,19 @@ CStreamItem::CStreamItem(CSoundData* sndData)
 
 CStreamItem::~CStreamItem()
 {
+	Stop();
+	ReleaseOpenALStream();
 }
 
-void CStreamItem::ReleaseOpenAL()
-{
-	int num_processed;
-	alGetSourcei(m_ALSource, AL_BUFFERS_PROCESSED, &num_processed);
-	
+void CStreamItem::ReleaseOpenALStream()
+{	
 	if (m_ALSource != 0)
 	{
 		int num_processed;
+		AL_CHECK
 		alGetSourcei(m_ALSource, AL_BUFFERS_PROCESSED, &num_processed);
-		
+		AL_CHECK
+
 		if (num_processed > 0)
 		{
 			ALuint* al_buf = new ALuint[num_processed];
@@ -54,21 +55,24 @@ void CStreamItem::ReleaseOpenAL()
 			AL_CHECK
 			delete[] al_buf;
 		}
+		alSourcei(m_ALSource, AL_BUFFER, NULL);
+		AL_CHECK
+		g_SoundManager->ReleaseALSource(m_ALSource);
+		AL_CHECK
+		m_ALSource = 0;
 	}
-	CSoundBase::ReleaseOpenAL();
 }
 
 bool CStreamItem::IdleTask()
 {
 	AL_CHECK
-	TouchTimer();
 	HandleFade();
 	AL_CHECK
 
 	if (m_ALSource != 0)
 	{
 		int proc_state;
-		alGetSourceiv(m_ALSource, AL_SOURCE_STATE, &proc_state);
+		alGetSourcei(m_ALSource, AL_SOURCE_STATE, &proc_state);
 		AL_CHECK
 		
 		if (proc_state == AL_STOPPED)
@@ -101,13 +105,16 @@ bool CStreamItem::IdleTask()
 			{
 				theData->ResetFile();
 			}
+			else
+			{
+				int num_processed;
+				alGetSourcei(m_ALSource, AL_BUFFERS_QUEUED, &num_processed);
+				m_ShouldBePlaying = ( num_processed == 0 );
+			}
 		}
 	}
+	AL_CHECK
 	return true;
-}
-bool CStreamItem::CanAttach(CSoundData* itemData)
-{
-	return ! itemData->IsOneShot();
 }
 
 void CStreamItem::Attach(CSoundData* itemData)

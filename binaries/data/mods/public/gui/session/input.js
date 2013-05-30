@@ -159,8 +159,9 @@ function findGatherType(gatherer, supply)
 	return undefined;
 }
 
-function getActionInfo(action, target, simState)
+function getActionInfo(action, target)
 {
+	var simState = GetSimState();
 	var selection = g_Selection.toList();
 
 	// If the selection doesn't exist, no action
@@ -212,6 +213,7 @@ function getActionInfo(action, target, simState)
 		var playerState = simState.players[entState.player];
 		var playerOwned = (targetState.player == entState.player);
 		var allyOwned = playerState.isAlly[targetState.player];
+		var mutualAllyOwned = playerState.isMutualAlly[targetState.player];
 		var enemyOwned = playerState.isEnemy[targetState.player];
 		var gaiaOwned = (targetState.player == 0);
 
@@ -220,11 +222,15 @@ function getActionInfo(action, target, simState)
 
 		// default to walking there
 		var data = {command: "walk"};
-		if (targetState.garrisonHolder && playerOwned)
+		if (targetState.garrisonHolder && (playerOwned || mutualAllyOwned))
 		{
 			data.command = "garrison";
 			data.target = target;
 			cursor = "action-garrison";
+			tooltip = "Current garrison: " + targetState.garrisonHolder.entities.length
+				+ "/" + targetState.garrisonHolder.capacity;
+			if (targetState.garrisonHolder.entities.length >= targetState.garrisonHolder.capacity)
+				tooltip = "[color=\"orange\"]" + tooltip + "[/color]";
 		}
 		else if (targetState.resourceSupply)
 		{
@@ -295,6 +301,7 @@ function getActionInfo(action, target, simState)
 		var playerState = simState.players[entState.player];
 		var playerOwned = (targetState.player == entState.player);
 		var allyOwned = playerState.isAlly[targetState.player];
+		var mutualAllyOwned = playerState.isMutualAlly[targetState.player];
 		var neutralOwned = playerState.isNeutral[targetState.player];
 		var enemyOwned = playerState.isEnemy[targetState.player];
 		var gaiaOwned = (targetState.player == 0);
@@ -306,14 +313,18 @@ function getActionInfo(action, target, simState)
 		switch (action)
 		{
 		case "garrison":
-			if (hasClass(entState, "Unit") && targetState.garrisonHolder && playerOwned)
+			if (hasClass(entState, "Unit") && targetState.garrisonHolder && (playerOwned || mutualAllyOwned))
 			{
+				var tooltip = "Current garrison: " + targetState.garrisonHolder.entities.length
+					+ "/" + targetState.garrisonHolder.capacity;
+				if (targetState.garrisonHolder.entities.length >= targetState.garrisonHolder.capacity)
+					tooltip = "[color=\"orange\"]" + tooltip + "[/color]";
 				var allowedClasses = targetState.garrisonHolder.allowedClasses;
 				for each (var unitClass in entState.identity.classes)
 				{
 					if (allowedClasses.indexOf(unitClass) != -1)
 					{
-						return {"possible": true};
+						return {"possible": true, "tooltip": tooltip};
 					}
 				}
 			}
@@ -457,60 +468,58 @@ function determineAction(x, y, fromMinimap)
 		target = targets[0];
 	}
 
-	var simState = Engine.GuiInterfaceCall("GetSimulationState");
-
+	var actionInfo = undefined;
 	if (preSelectedAction != ACTION_NONE)
 	{
 		switch (preSelectedAction)
 		{
 		case ACTION_GARRISON:
-			if (getActionInfo("garrison", target, simState).possible)
-				return {"type": "garrison", "cursor": "action-garrison", "target": target};
+			if ((actionInfo = getActionInfo("garrison", target)).possible)
+				return {"type": "garrison", "cursor": "action-garrison", "tooltip": actionInfo.tooltip, "target": target};
 			else
-				return 	{"type": "none", "cursor": "action-garrison-disabled", "target": undefined};
+				return {"type": "none", "cursor": "action-garrison-disabled", "target": undefined};
 			break;
 		case ACTION_REPAIR:
-			if (getActionInfo("repair", target, simState).possible)
+			if (getActionInfo("repair", target).possible)
 				return {"type": "repair", "cursor": "action-repair", "target": target};
 			else
 				return {"type": "none", "cursor": "action-repair-disabled", "target": undefined};
 			break;
 		}
 	}
-	else if (Engine.HotkeyIsPressed("session.attack") && getActionInfo("attack", target, simState).possible)
+	else if (Engine.HotkeyIsPressed("session.attack") && getActionInfo("attack", target).possible)
 	{
 		return {"type": "attack", "cursor": "action-attack", "target": target};
 	}
-	else if (Engine.HotkeyIsPressed("session.garrison") && getActionInfo("garrison", target, simState).possible)
+	else if (Engine.HotkeyIsPressed("session.garrison") && (actionInfo = getActionInfo("garrison", target)).possible)
 	{
-		return {"type": "garrison", "cursor": "action-garrison", "target": target};
+		return {"type": "garrison", "cursor": "action-garrison", "tooltip": actionInfo.tooltip, "target": target};
 	}
-	else if (Engine.HotkeyIsPressed("session.attackmove") && getActionInfo("attack-move", target, simState).possible)
+	else if (Engine.HotkeyIsPressed("session.attackmove") && getActionInfo("attack-move", target).possible)
 	{
 			return {"type": "attack-move", "cursor": "action-attack-move"};
 	}
 	else
 	{
-		var actionInfo = undefined;
-		if ((actionInfo = getActionInfo("setup-trade-route", target, simState)).possible)
+		if ((actionInfo = getActionInfo("setup-trade-route", target)).possible)
 			return {"type": "setup-trade-route", "cursor": "action-setup-trade-route", "tooltip": actionInfo.tooltip, "target": target};
-		else if ((actionInfo = getActionInfo("gather", target, simState)).possible)
+		else if ((actionInfo = getActionInfo("gather", target)).possible)
 			return {"type": "gather", "cursor": actionInfo.cursor, "target": target};
-		else if ((actionInfo = getActionInfo("returnresource", target, simState)).possible)
+		else if ((actionInfo = getActionInfo("returnresource", target)).possible)
 			return {"type": "returnresource", "cursor": actionInfo.cursor, "target": target};
-		else if (getActionInfo("build", target, simState).possible)
+		else if (getActionInfo("build", target).possible)
 			return {"type": "build", "cursor": "action-build", "target": target};
-		else if (getActionInfo("repair", target, simState).possible)
+		else if (getActionInfo("repair", target).possible)
 			return {"type": "build", "cursor": "action-repair", "target": target};
-		else if ((actionInfo = getActionInfo("set-rallypoint", target, simState)).possible)
+		else if ((actionInfo = getActionInfo("set-rallypoint", target)).possible)
 			return {"type": "set-rallypoint", "cursor": actionInfo.cursor, "data": actionInfo.data, "tooltip": actionInfo.tooltip, "position": actionInfo.position};
-		else if (getActionInfo("heal", target, simState).possible)
+		else if (getActionInfo("heal", target).possible)
 			return {"type": "heal", "cursor": "action-heal", "target": target};
-		else if (getActionInfo("attack", target, simState).possible)
+		else if (getActionInfo("attack", target).possible)
 			return {"type": "attack", "cursor": "action-attack", "target": target};
-		else if (getActionInfo("unset-rallypoint", target, simState).possible)
+		else if (getActionInfo("unset-rallypoint", target).possible)
 			return {"type": "unset-rallypoint"};
-		else if (getActionInfo("move", target, simState).possible)
+		else if (getActionInfo("move", target).possible)
 			return {"type": "move"};
 	}
 	return {"type": type, "cursor": cursor, "target": target};
@@ -1170,14 +1179,14 @@ function handleInputAfterGui(ev)
 					{
 						// If double click hasn't already occurred, this is a double click.
 						// Select similar units regardless of rank
-						templateToMatch = Engine.GuiInterfaceCall("GetEntityState", selectedEntity).identity.selectionGroupName;
+						templateToMatch = GetEntityState(selectedEntity).identity.selectionGroupName;
 						if (templateToMatch)
 						{
 							matchRank = false;
 						}
 						else
 						{	// No selection group name defined, so fall back to exact match
-							templateToMatch = Engine.GuiInterfaceCall("GetEntityState", selectedEntity).template;
+							templateToMatch = GetEntityState(selectedEntity).template;
 						}
 
 						doubleClicked = true;
@@ -1188,7 +1197,7 @@ function handleInputAfterGui(ev)
 					{
 						// Double click has already occurred, so this is a triple click.
 						// Select units matching exact template name (same rank)
-						templateToMatch = Engine.GuiInterfaceCall("GetEntityState", selectedEntity).template;
+						templateToMatch = GetEntityState(selectedEntity).template;
 					}
 
 					// TODO: Should we handle "control all units" here as well?
@@ -1442,7 +1451,8 @@ function handleMinimapEvent(target)
 			Engine.GuiInterfaceCall("DisplayRallyPoint", {
 				"entities": selection,
 				"x": target.x,
-				"z": target.z
+				"z": target.z,
+				"queued": queued
 			});
 			return true;
 
@@ -1455,8 +1465,11 @@ function handleMinimapEvent(target)
 
 // Called by GUI when user clicks construction button
 // @param buildTemplate Template name of the entity the user wants to build
-function startBuildingPlacement(buildTemplate)
+function startBuildingPlacement(buildTemplate, playerState)
 {
+	if(getEntityLimitAndCount(playerState, buildTemplate)[2] == 0)
+		return;
+
 	// TODO: we should clear any highlight selection rings here. If the mouse was over an entity before going onto the GUI
 	// to start building a structure, then the highlight selection rings are kept during the construction of the building.
 	// Gives the impression that somehow the hovered-over entity has something to do with the building you're constructing.
@@ -1539,25 +1552,27 @@ function getBuildingsWhichCanTrainEntity(entitiesToCheck, trainEntType)
 function getEntityLimitAndCount(playerState, entType)
 {
 	var template = GetTemplateData(entType);
-	var trainingCategory = null;
+	var entCategory = null;
 	if (template.trainingRestrictions)
-		trainingCategory = template.trainingRestrictions.category;
-	var trainEntLimit = undefined;
-	var trainEntCount = undefined;
-	var canBeTrainedCount = undefined;
-	if (trainingCategory && playerState.entityLimits[trainingCategory])
+		entCategory = template.trainingRestrictions.category;
+	else if (template.buildRestrictions)
+		entCategory = template.buildRestrictions.category;
+	var entLimit = undefined;
+	var entCount = undefined;
+	var canBeAddedCount = undefined;
+	if (entCategory && playerState.entityLimits[entCategory])
 	{
-		trainEntLimit = playerState.entityLimits[trainingCategory];
-		trainEntCount = playerState.entityCounts[trainingCategory];
-		canBeTrainedCount = Math.max(trainEntLimit - trainEntCount, 0);
+		entLimit = playerState.entityLimits[entCategory];
+		entCount = playerState.entityCounts[entCategory];
+		canBeAddedCount = Math.max(entLimit - entCount, 0);
 	}
-	return [trainEntLimit, trainEntCount, canBeTrainedCount];
+	return [entLimit, entCount, canBeAddedCount];
 }
 
 // Add the unit shown at position to the training queue for all entities in the selection
 function addTrainingByPosition(position)
 {
-	var simState = Engine.GuiInterfaceCall("GetSimulationState");
+	var simState = GetSimState();
 	var playerState = simState.players[Engine.GetPlayerID()];
 	var selection = g_Selection.toList();
 
@@ -1732,6 +1747,8 @@ function performCommand(entity, commandName)
 		var unitName = getEntityName(template);
 
 		var playerID = Engine.GetPlayerID();
+		var simState = GetSimState();
+
 		if (entState.player == playerID || g_DevSettings.controlAll)
 		{
 			switch (commandName)
@@ -1775,6 +1792,18 @@ function performCommand(entity, commandName)
 				if (focusTarget !== null)
 					Engine.CameraMoveTo(focusTarget.x, focusTarget.z);
 				
+				break;
+			default:
+				break;
+			}
+		}
+		else if (simState.players[playerID].isMutualAlly[entState.player])
+		{
+			switch (commandName)
+			{
+			case "garrison":
+				inputState = INPUT_PRESELECTEDACTION;
+				preSelectedAction = ACTION_GARRISON;
 				break;
 			default:
 				break;
@@ -2024,4 +2053,16 @@ function unloadAll()
 	});
 
 	Engine.PostNetworkCommand({"type": "unload-all", "garrisonHolders": garrisonHolders});
+}
+
+function clearSelection()
+{
+	if(inputState==INPUT_BUILDING_PLACEMENT || inputState==INPUT_BUILDING_WALL_PATHING)
+	{
+		inputState = INPUT_NORMAL;
+		placementSupport.Reset();
+	}
+	else
+		g_Selection.reset();
+	preSelectedAction = ACTION_NONE;
 }

@@ -146,7 +146,7 @@ function formatLimitString(trainEntLimit, trainEntCount)
 {
 	if (trainEntLimit == undefined)
 		return "";
-	var text = "\n\nCurrent count: " + trainEntCount + ", limit: " + trainEntLimit + ".";
+	var text = "\n\nCurrent Count: " + trainEntCount + ", Limit: " + trainEntLimit + ".";
 	if (trainEntCount >= trainEntLimit)
 		text = "[color=\"red\"]" + text + "[/color]";
 	return text;
@@ -455,14 +455,14 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 				if (template.health)
 					tooltip += "\n[font=\"serif-bold-13\"]Health:[/font] " + template.health;
 				if (template.armour)
-					tooltip += "\n[font=\"serif-bold-13\"]Armour:[/font] " + damageTypesToText(template.armour);
+					tooltip += "\n[font=\"serif-bold-13\"]Armour:[/font] " + armorTypesToText(template.armour);
 				if (template.attack)
 					tooltip += "\n" + getEntityAttack(template);
 				if (template.speed)
 					tooltip += "\n" + getEntitySpeed(template);
 
-				var [trainEntLimit, trainEntCount, canBeTrainedCount] =
-					getEntityLimitAndCount(playerState, entType)
+				var [trainEntLimit, trainEntCount, canBeAddedCount] =
+					getEntityLimitAndCount(playerState, entType);
 				tooltip += formatLimitString(trainEntLimit, trainEntCount);
 
 				tooltip += formatBatchTrainingString(buildingsCountToTrainFullBatch, fullBatchSize, remainderBatch);
@@ -495,11 +495,15 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 				if (template.tooltip)
 					tooltip += "\n[font=\"serif-13\"]" + template.tooltip + "[/font]";
 
-				tooltip += "\n" + getEntityCostTooltip(template); // see utility_functions.js
-				tooltip += getPopulationBonusTooltip(template); // see utility_functions.js
+				tooltip += "\n" + getEntityCostTooltip(template);
+				tooltip += getPopulationBonusTooltip(template);
 
 				if (template.health)
 					tooltip += "\n[font=\"serif-bold-13\"]Health:[/font] " + template.health;
+
+				var [entLimit, entCount, canBeAddedCount] =
+					getEntityLimitAndCount(playerState, entType);
+				tooltip += formatLimitString(entLimit, entCount);
 
 				break;
 
@@ -669,7 +673,7 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 			button.enabled = true;
 			if (affordableMask)
 				affordableMask.hidden = true;	// actually used for the red "lack of resource" overlay, and darkening if unavailable. Sort of a hack.
-	
+
 			// In case this is an icon that would require tech checking, make sure we have the requirements.
 			if (guiName != SELECTION && guiName != GARRISON && guiName != QUEUE && template.requiredTechnology && !Engine.GuiInterfaceCall("IsTechnologyResearched", template.requiredTechnology))
 			{
@@ -677,7 +681,7 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 				var techName = getEntityNames(GetTechnologyData(template.requiredTechnology));
 				button.tooltip += "\nRequires " + techName;
 				grayscale = "grayscale:";
-                affordableMask.hidden = false;
+				affordableMask.hidden = false;
 				affordableMask.sprite = "colour: 0 0 0 127";
 			}
 			
@@ -686,8 +690,32 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 				button.enabled = false;
 				button.tooltip += "\n" + GetTechnologyData(entType).requirementsTooltip;
 				grayscale = "grayscale:";
-                affordableMask.hidden = false;
+				affordableMask.hidden = false;
 				affordableMask.sprite = "colour: 0 0 0 127";
+			}
+
+			if ((guiName == CONSTRUCTION || guiName == TRAINING) && canBeAddedCount == 0)
+			{
+				grayscale = "grayscale:";
+				affordableMask.hidden = false;
+				affordableMask.sprite = "colour: 0 0 0 127";
+			}
+
+			if (guiName == GARRISON)
+			{
+				var ents = garrisonGroups.getEntsByName(item);
+				var entplayer = GetEntityState(ents[0]).player;
+				button.sprite = "colour: " + g_Players[entplayer].color.r + " " + g_Players[entplayer].color.g + " " + g_Players[entplayer].color.b;
+
+				var player = Engine.GetPlayerID();
+				if(player != unitEntState.player && !g_DevSettings.controlAll)
+				{
+					if (entplayer != player) 
+					{
+						button.enabled = false;
+						grayscale = "grayscale:";
+					}
+				}
 			}
 			
 			icon.sprite = "stretched:" + grayscale + "session/portraits/" + template.icon;
@@ -724,7 +752,7 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 						button1.enabled = false;
 						button1.tooltip += "\n" + GetTechnologyData(entType1).requirementsTooltip;
 						grayscale = "grayscale:";
-                        affordableMask1.hidden = false;
+						affordableMask1.hidden = false;
 						affordableMask1.sprite = "colour: 0 0 0 127";
 					}
 					icon1.sprite = "stretched:" + grayscale + "session/portraits/" +template1.icon;
@@ -760,20 +788,9 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 				var totalCosts = {};
 				var trainNum = 1;
 				var button_disableable = true;
+
 				if (guiName == TRAINING)
 				{
-					var trainingCategory = null;
-					if (template.trainingRestrictions)
-						trainingCategory = template.trainingRestrictions.category;
-					if (trainingCategory && playerState.entityLimits[trainingCategory] &&
-						playerState.entityCounts[trainingCategory] >= playerState.entityLimits[trainingCategory])
-					{
-						grayscale = "grayscale:";
-                        affordableMask.hidden = false;
-						affordableMask.sprite = "colour: 0 0 0 100";
-					}
-					icon.sprite = "stretched:" + grayscale + "session/portraits/" + template.icon;
-
 					if (Engine.HotkeyIsPressed("session.batchtrain"))
 					{
 						var [buildingsCountToTrainFullBatch, fullBatchSize, remainderBatch, batchTrainingCount] =
@@ -794,14 +811,18 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 					if (button.enabled !== false)
 					{
 						button.enabled = (button_disableable ? false : true);
-						affordableMask.hidden = false;
+						// Don't display the red overlay if we can't even train/build it
+						if (canBeAddedCount != 0)
+						{
+							affordableMask.hidden = false;
 
-						var totalCost = 0;
-						for each (var resource in neededResources)
-							totalCost += resource;
-						var alpha = 50 + totalCost/10;
-						alpha = alpha > 125 ? 125 : alpha;
-						affordableMask.sprite = "colour: 255 0 0 " + (alpha);
+							var totalCost = 0;
+							for each (var resource in neededResources)
+								totalCost += resource;
+							var alpha = 50 + totalCost/10;
+							alpha = alpha > 125 ? 125 : alpha;
+							affordableMask.sprite = "colour: 255 0 0 " + (alpha);
+						}
 					}
 					button.tooltip += getNeededResourcesTooltip(neededResources);
 				}
@@ -870,13 +891,13 @@ function setupUnitPanel(guiName, usedPanels, unitEntState, playerState, items, c
 	}
 
 	// Hide any buttons we're no longer using
-	for (i = numButtons; i < g_unitPanelButtons[guiName]; ++i)
+	for (var i = numButtons; i < g_unitPanelButtons[guiName]; ++i)
 		getGUIObjectByName("unit"+guiName+"Button["+i+"]").hidden = true;
 
 	// Hide unused pair buttons and symbols
 	if (guiName == RESEARCH)
 	{
-		for (i = numButtons; i < g_unitPanelButtons[guiName]; ++i)
+		for (var i = numButtons; i < g_unitPanelButtons[guiName]; ++i)
 		{
 			getGUIObjectByName("unit"+guiName+"Button["+(i+rowLength)+"]").hidden = true;
 			getGUIObjectByName("unit"+guiName+"Pair["+i+"]").hidden = true;
@@ -1003,13 +1024,14 @@ function updateUnitCommands(entState, supplementalDetailsPanel, commandsPanel, s
 
 	// If the selection is friendly units, add the command panels
 	var player = Engine.GetPlayerID();
+
+	// Get player state to check some constraints
+	// e.g. presence of a hero or build limits
+	var simState = GetSimState();
+	var playerState = simState.players[player];
+
 	if (entState.player == player || g_DevSettings.controlAll)
 	{
-		// Get player state to check some constraints
-		// e.g. presence of a hero or build limits
-		var simState = Engine.GuiInterfaceCall("GetSimulationState");
-		var playerState = simState.players[player];
-
 		if (selection.length > 1)
 			setupUnitPanel(SELECTION, usedPanels, entState, playerState, g_Selection.groups.getTemplateNames(),
 				function (entType, rightPressed) { changePrimarySelectionGroup(entType, rightPressed); } );
@@ -1024,7 +1046,7 @@ function updateUnitCommands(entState, supplementalDetailsPanel, commandsPanel, s
 			var groups = new EntityGroups();
 			for (var i in selection)
 			{
-				state = GetEntityState(selection[i]);
+				var state = GetEntityState(selection[i]);
 				if (state.garrisonHolder)
 					groups.add(state.garrisonHolder.entities)
 			}
@@ -1064,7 +1086,8 @@ function updateUnitCommands(entState, supplementalDetailsPanel, commandsPanel, s
 
 		// The first selected entity's type has priority.
 		if (entState.buildEntities)
-			setupUnitPanel(CONSTRUCTION, usedPanels, entState, playerState, buildableEnts, startBuildingPlacement);
+			setupUnitPanel(CONSTRUCTION, usedPanels, entState, playerState, buildableEnts, 
+				function (trainEntType) { startBuildingPlacement(trainEntType, playerState); } );
 		else if (entState.production && entState.production.entities)
 			setupUnitPanel(TRAINING, usedPanels, entState, playerState, trainableEnts,
 				function (trainEntType) { addTrainingToQueue(selection, trainEntType, playerState); } );
@@ -1170,7 +1193,8 @@ function updateUnitCommands(entState, supplementalDetailsPanel, commandsPanel, s
 			// The right pane is empty. Fill the pane with a sane type.
 			// Prefer buildables for units and trainables for structures.
 			if (buildableEnts.length && (hasClass(entState, "Unit") || !trainableEnts.length))
-				setupUnitPanel(CONSTRUCTION, usedPanels, entState, playerState, buildableEnts, startBuildingPlacement);
+				setupUnitPanel(CONSTRUCTION, usedPanels, entState, playerState, buildableEnts, 
+					function (trainEntType) { startBuildingPlacement(trainEntType, playerState); });
 			else if (trainableEnts.length)
 				setupUnitPanel(TRAINING, usedPanels, entState, playerState, trainableEnts,
 					function (trainEntType) { addTrainingToQueue(selection, trainEntType, playerState); } );
@@ -1190,6 +1214,30 @@ function updateUnitCommands(entState, supplementalDetailsPanel, commandsPanel, s
 		
 		supplementalDetailsPanel.hidden = false;
 		commandsPanel.hidden = false;
+	}
+	else if (playerState.isMutualAlly[entState.player]) // owned by allied player
+	{
+		if (entState.garrisonHolder)
+		{
+			var groups = new EntityGroups();
+			for (var i in selection)
+			{
+				var state = GetEntityState(selection[i]);
+				if (state.garrisonHolder)
+					groups.add(state.garrisonHolder.entities)
+			}
+
+			setupUnitPanel(GARRISON, usedPanels, entState, playerState, groups.getTemplateNames(),
+				function (item) { unloadTemplate(item); } );
+
+			supplementalDetailsPanel.hidden = false;
+		}
+		else
+		{
+			supplementalDetailsPanel.hidden = true;
+		}
+
+		commandsPanel.hidden = true;
 	}
 	else // owned by another player
 	{

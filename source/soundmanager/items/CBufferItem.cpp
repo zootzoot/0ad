@@ -36,30 +36,34 @@ CBufferItem::CBufferItem(CSoundData* sndData)
 
 CBufferItem::~CBufferItem()
 {
+	Stop();
+	ReleaseOpenALBuffer();
 }
 
 
-void CBufferItem::ReleaseOpenAL()
+void CBufferItem::ReleaseOpenALBuffer()
 {
+	if ( m_ALSource == 0 )
+		return;
+
 	int num_processed;
+	AL_CHECK
 	alGetSourcei(m_ALSource, AL_BUFFERS_PROCESSED, &num_processed);
-	
+	AL_CHECK
+
 	if (num_processed > 0)
 	{
-		int num_processed;
-		alGetSourcei(m_ALSource, AL_BUFFERS_PROCESSED, &num_processed);
+		ALuint* al_buf = new ALuint[num_processed];
+		alSourceUnqueueBuffers(m_ALSource, num_processed, al_buf);
 		
-		if (num_processed > 0)
-		{
-			ALuint* al_buf = new ALuint[num_processed];
-			alSourceUnqueueBuffers(m_ALSource, num_processed, al_buf);
-			
-			AL_CHECK
-			delete[] al_buf;
-		}
+		AL_CHECK
+		delete[] al_buf;
 	}
+	alSourcei(m_ALSource, AL_BUFFER, NULL);
+	g_SoundManager->ReleaseALSource(m_ALSource);
+	AL_CHECK
 
-	CSoundBase::ReleaseOpenAL();
+	m_ALSource = 0;
 }
 
 bool CBufferItem::IdleTask()
@@ -68,58 +72,39 @@ bool CBufferItem::IdleTask()
 		return false;
 
 	HandleFade();
-	TouchTimer();
 	
 	if (m_LastPlay)
 	{
 		CScopeLock lock(m_ItemMutex);
 		int proc_state;
-		alGetSourceiv(m_ALSource, AL_SOURCE_STATE, &proc_state);
+		alGetSourcei(m_ALSource, AL_SOURCE_STATE, &proc_state);
 		AL_CHECK
+		m_ShouldBePlaying = (proc_state != AL_STOPPED);
 		return (proc_state != AL_STOPPED);
 	}
 	
 	if (GetLooping())
 	{
-		CScopeLock lock(m_ItemMutex);
 		int num_processed;
+		AL_CHECK
 		alGetSourcei(m_ALSource, AL_BUFFERS_PROCESSED, &num_processed);
 		
+		AL_CHECK
 		for (int i = 0; i < num_processed; i++)
 		{
-			int proc_state;
-			alGetSourceiv(m_ALSource, AL_SOURCE_STATE, &proc_state);
+			ALuint al_buf;
+			alSourceUnqueueBuffers(m_ALSource, 1, &al_buf);
 			AL_CHECK
-			
-			return (proc_state != AL_STOPPED);
-		}
-		
-		if (GetLooping())
-		{
-			int num_processed;
-			alGetSourcei(m_ALSource, AL_BUFFERS_PROCESSED, &num_processed);
-			
-			for (int i = 0; i < num_processed; i++)
-			{
-				ALuint al_buf;
-				alSourceUnqueueBuffers(m_ALSource, 1, &al_buf);
-				AL_CHECK
-				alSourceQueueBuffers(m_ALSource, 1, &al_buf);
-				AL_CHECK
-			}
+			alSourceQueueBuffers(m_ALSource, 1, &al_buf);
+			AL_CHECK
 		}
 	}
 
 	return true;
 }
-bool CBufferItem::CanAttach(CSoundData* itemData)
-{
-	return itemData->IsOneShot() && (itemData->GetBufferCount() > 1);
-}
 
 void CBufferItem::Attach(CSoundData* itemData)
 {
-AL_CHECK
 	if ( m_ALSource == 0 )
 		return;
 	

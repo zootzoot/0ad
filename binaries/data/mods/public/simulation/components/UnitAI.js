@@ -156,10 +156,6 @@ var UnitFsmSpec = {
 		// ignore
 	},
 
-	"EntityRenamed": function(msg) {
-		// ignore
-	},
-	
 	"PackFinished": function(msg) {
 		// ignore
 	},
@@ -997,21 +993,6 @@ var UnitFsmSpec = {
 				this.StartTimer(1000, 1000);
 			},
 
-			"EntityRenamed": function(msg) {
-				if (this.order.data && this.order.data.target
-				    && this.order.data.target == msg.entity)
-				{
-					this.order.data.target = msg.newentity;
-
-					// If we're hunting, that means we have a queued gather
-					// order whose target also needs to be updated.
-					if (this.order.data.hunting && this.orderQueue[1] &&
-							this.orderQueue[1].type == "Gather")
-						this.orderQueue[1].data.target = msg.newentity;
-				}
-			},
-
-
 			"Timer": function(msg) {
 				var cmpFormation = Engine.QueryInterface(this.entity, IID_Formation);
 
@@ -1297,19 +1278,6 @@ var UnitFsmSpec = {
 			"Order.LeaveFoundation": function(msg) {
 				// Ignore the order as we're busy.
 				return { "discardOrder": true };
-			},
-
-			"EntityRenamed": function(msg) {
-				if (this.order.data.target == msg.entity)
-				{
-					this.order.data.target = msg.newentity;
-
-					// If we're hunting, that means we have a queued gather
-					// order whose target also needs to be updated.
-					if (this.order.data.hunting && this.orderQueue[1] &&
-							this.orderQueue[1].type == "Gather")
-						this.orderQueue[1].data.target = msg.newentity;
-				}
 			},
 
 			"Attacked": function(msg) {
@@ -1867,11 +1835,6 @@ var UnitFsmSpec = {
 		},
 
 		"HEAL": {
-			"EntityRenamed": function(msg) {
-				if (this.order.data.target == msg.entity)
-					this.order.data.target = msg.newentity;
-			},
-
 			"Attacked": function(msg) {
 				// If we stand ground we will rather die than flee
 				if (!this.GetStance().respondStandGround && !this.order.data.force)
@@ -2115,12 +2078,20 @@ var UnitFsmSpec = {
 						this.FinishOrder();
 						return true;
 					}
-					else
+
+					// Check if the target is still repairable
+					var cmpHealth = Engine.QueryInterface(target, IID_Health);
+					if (cmpHealth && cmpHealth.GetHitpoints() >= cmpHealth.GetMaxHitpoints())
 					{
-						var cmpFoundation = Engine.QueryInterface(target, IID_Foundation);
-						if (cmpFoundation)
-							cmpFoundation.AddBuilder(this.entity);
+						// The building was already finished/fully repaired before we arrived;
+						// let the ConstructionFinished handler handle this.
+						this.OnGlobalConstructionFinished({"entity": target, "newentity": target});
+						return true;
 					}
+
+					var cmpFoundation = Engine.QueryInterface(target, IID_Foundation);
+					if (cmpFoundation)
+						cmpFoundation.AddBuilder(this.entity);
 
 					this.SelectAnimation("build", false, 1.0, "build");
 					this.StartTimer(1000, 1000);
@@ -2928,7 +2899,7 @@ UnitAI.prototype.AddOrders = function(orders)
 UnitAI.prototype.GetOrderData = function()
 {
 	var orders = [];
-	for (i in this.orderQueue) {
+	for (var i in this.orderQueue) {
 		if (this.orderQueue[i].data)
 			orders.push(deepcopy(this.orderQueue[i].data));
 		}
@@ -3002,7 +2973,9 @@ UnitAI.prototype.OnGlobalConstructionFinished = function(msg)
 
 UnitAI.prototype.OnGlobalEntityRenamed = function(msg)
 {
-	UnitFsm.ProcessMessage(this, {"type": "EntityRenamed", "entity": msg.entity, "newentity": msg.newentity});
+	for each (var order in this.orderQueue)
+		if (order.data && order.data.target && order.data.target == msg.entity)
+			order.data.target = msg.newentity;
 };
 
 UnitAI.prototype.OnAttacked = function(msg)
@@ -4247,9 +4220,9 @@ UnitAI.prototype.CanGarrison = function(target)
 	if (!cmpGarrisonHolder)
 		return false;
 
-	// Verify that the target is owned by this entity's player
+	// Verify that the target is owned by this entity's player or a mutual ally of this player
 	var cmpOwnership = Engine.QueryInterface(this.entity, IID_Ownership);
-	if (!cmpOwnership || !IsOwnedByPlayer(cmpOwnership.GetOwner(), target))
+	if (!cmpOwnership || !(IsOwnedByPlayer(cmpOwnership.GetOwner(), target) || IsOwnedByMutualAllyOfPlayer(cmpOwnership.GetOwner(), target)))
 		return false;
 
 	// Don't let animals garrison for now

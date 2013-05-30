@@ -50,17 +50,17 @@ public:
 	
 	virtual unsigned int GetBuffer();
 	virtual int GetBufferCount();
-	virtual CStrW* GetFileName();
+	virtual Path* GetFileName();
 	virtual void SetFileName(const Path& aName);
 
 	virtual unsigned int* GetBufferPtr();
 
 protected:
-	static DataMap* sSoundData;
+	static DataMap sSoundData;
 
 	unsigned int m_ALBuffer;
 	int m_RetentionCount;
-	CStrW* m_FileName;
+	Path* m_FileName;
 
 };
 

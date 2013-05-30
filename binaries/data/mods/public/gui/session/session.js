@@ -23,6 +23,9 @@ var g_ShowAllStatusBars = false;
 // (this is used to support population counter blinking)
 var g_IsTrainingBlocked = false;
 
+// Cache simulation state (updated on every simulation update)
+var g_SimState;
+
 // Cache EntityStates
 var g_EntityStates = {}; // {id:entState}
 
@@ -34,6 +37,16 @@ var g_Disconnected = false; // Lost connection to server
 // Colors to flash when pop limit reached
 const DEFAULT_POPULATION_COLOR = "white";
 const POPULATION_ALERT_COLOR = "orange";
+
+function GetSimState()
+{
+	if (!g_SimState)
+	{
+		g_SimState = Engine.GuiInterfaceCall("GetSimulationState");
+	}
+
+	return g_SimState;
+}
 
 function GetEntityState(entId)
 {
@@ -159,9 +172,9 @@ function reportPerformance(time)
 
 function resignGame()
 {
-	var simState = Engine.GuiInterfaceCall("GetSimulationState");
+	var simState = GetSimState();
 
-	// Players can't resign if they've already won or lost.	
+	// Players can't resign if they've already won or lost.
 	if (simState.players[Engine.GetPlayerID()].state != "active" || g_Disconnected)
 		return;
 
@@ -239,7 +252,7 @@ function getSavedGameData()
 function restoreSavedGameData(data)
 {
 	// Restore control groups
-	for (groupNumber in data.groups)
+	for (var groupNumber in data.groups)
 	{
 		g_Groups.groups[groupNumber].groups = data.groups[groupNumber].groups;
 		g_Groups.groups[groupNumber].ents = data.groups[groupNumber].ents;
@@ -301,7 +314,7 @@ function onTick()
 
 function checkPlayerState()
 {
-	var simState = Engine.GuiInterfaceCall("GetSimulationState");
+	var simState = GetSimState();
 	var playerState = simState.players[Engine.GetPlayerID()];
 
 	if (!g_GameEnded)
@@ -386,10 +399,10 @@ function onSimulationUpdate()
 	g_TemplateData = {};
 	g_TechnologyData = {};
 
-	var simState = Engine.GuiInterfaceCall("GetSimulationState");
+	g_SimState = Engine.GuiInterfaceCall("GetSimulationState");
 
 	// If we're called during init when the game is first loading, there will be no simulation yet, so do nothing
-	if (!simState)
+	if (!g_SimState)
 		return;
 
 	handleNotifications();
@@ -397,14 +410,14 @@ function onSimulationUpdate()
 	if (g_ShowAllStatusBars)
 		recalculateStatusBarDisplay();
 
-	updateHero(simState);
+	updateHero();
 	updateGroups();
-	updateDebug(simState);
-	updatePlayerDisplay(simState);
+	updateDebug();
+	updatePlayerDisplay();
 	updateSelectionDetails();
 	updateResearchDisplay();
 	updateBuildingPlacementPreview();
-	updateTimeElapsedCounter(simState);
+	updateTimeElapsedCounter();
 
 	// Update music state on basis of battle state.
 	var battleState = Engine.GuiInterfaceCall("GetBattleState", Engine.GetPlayerID());
@@ -412,8 +425,9 @@ function onSimulationUpdate()
 		global.music.setState(global.music.states[battleState]);
 }
 
-function updateHero(simState)
+function updateHero()
 {
+	var simState = GetSimState();
 	var playerState = simState.players[Engine.GetPlayerID()];
 	var heroButton = getGUIObjectByName("unitHeroButton");
 
@@ -424,7 +438,7 @@ function updateHero(simState)
 	}
 
 	var heroImage = getGUIObjectByName("unitHeroImage");
-	var heroState = Engine.GuiInterfaceCall("GetEntityState", playerState.heroes[0]);
+	var heroState = GetEntityState(playerState.heroes[0]);
 	var template = GetTemplateData(heroState.template);
 	heroImage.sprite = "stretched:session/portraits/" + template.icon;
 
@@ -435,7 +449,7 @@ function updateHero(simState)
 	// Setup tooltip
 	var tooltip = "[font=\"serif-bold-16\"]" + template.name.specific + "[/font]";
 	tooltip += "\n[font=\"serif-bold-13\"]Health:[/font] " + heroState.hitpoints + "/" + heroState.maxHitpoints;
-	tooltip += "\n[font=\"serif-bold-13\"]" + (heroState.attack ? heroState.attack.type + " " : type)
+	tooltip += "\n[font=\"serif-bold-13\"]" + (heroState.attack ? heroState.attack.type + " " : "")
 	           + "Attack:[/font] " + damageTypeDetails(heroState.attack);
 	// Show max attack range if ranged attack, also convert to tiles (4m per tile)
 	if (heroState.attack && heroState.attack.type == "Ranged")
@@ -471,8 +485,9 @@ function updateGroups()
 		layoutButtonRow(i, guiName, buttonSideLength, buttonSpacer, rowLength*i, rowLength*(i+1) );
 }
 
-function updateDebug(simState)
+function updateDebug()
 {
+	var simState = GetSimState();
 	var debug = getGUIObjectByName("debug");
 
 	if (getGUIObjectByName("devDisplayState").checked)
@@ -506,8 +521,9 @@ function updateDebug(simState)
 	debug.caption = text;
 }
 
-function updatePlayerDisplay(simState)
+function updatePlayerDisplay()
 {
+	var simState = GetSimState();
 	var playerState = simState.players[Engine.GetPlayerID()];
 	if (!playerState)
 		return;
@@ -582,8 +598,9 @@ function updateResearchDisplay()
 		getGUIObjectByName("researchStartedButton[" + i + "]").hidden = true;
 }
 
-function updateTimeElapsedCounter(simState)
+function updateTimeElapsedCounter()
 {
+	var simState = GetSimState();
 	var speed = g_CurrentSpeed != 1.0 ? " (" + g_CurrentSpeed + "x)" : "";
 	var timeElapsedCounter = getGUIObjectByName("timeElapsedCounter");
 	timeElapsedCounter.caption = timeToString(simState.timeElapsed) + speed;

@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -34,6 +34,7 @@
 
 #define AL_CHECK CSoundManager::al_check(__func__, __LINE__);
 
+typedef std::vector<VfsPath> PlayList;
 typedef std::vector<ISoundItem*> ItemsList;
 typedef std::map<entity_id_t, ISoundItem*> ItemsMap;
 
@@ -49,6 +50,8 @@ struct ALSourceHolder
 
 class CSoundManager
 {
+	NONCOPYABLE(CSoundManager);
+
 protected:
 
 	ALuint m_ALEnvironment;
@@ -57,15 +60,14 @@ protected:
 	ISoundItem* m_CurrentTune;
 	ISoundItem* m_CurrentEnvirons;
 	CSoundManagerWorker* m_Worker;
-	ItemsMap* m_ItemsMap;
 	CMutex m_DistressMutex;
+	PlayList* m_PlayListItems;
 
 	float m_Gain;
 	float m_MusicGain;
 	float m_AmbientGain;
 	float m_ActionGain;
 	bool m_Enabled;
-	long m_SourceCOunt;
 	long m_BufferSize;
 	int m_BufferCount;
 	bool m_MusicEnabled;
@@ -74,7 +76,11 @@ protected:
 	bool m_MusicPaused;
 	bool m_AmbientPaused;
 	bool m_ActionPaused;
+	bool m_RunningPlaylist;
+ 	bool m_PlayingPlaylist;
+  bool m_LoopingPlaylist;
 
+	long m_PlaylistGap;
 	long m_DistressErrCount;
 	long m_DistressTime;
 
@@ -87,6 +93,10 @@ public:
 	ISoundItem* LoadItem(const VfsPath& itemPath);
 	ISoundItem* ItemForData(CSoundData* itemData);
 	ISoundItem* ItemForEntity( entity_id_t source, CSoundData* sndData);
+
+	void ClearPlayListItems();
+	void StartPlayList( bool doLoop );
+	void AddPlayListItem( const VfsPath& itemPath);
 
 	static void ScriptingInit();
 	static void CreateSoundManager();
@@ -126,15 +136,17 @@ public:
 	void SetDistressThroughShortage();
 	void SetDistressThroughError();
 
-  	void Pause(bool pauseIt);
-  	void PauseMusic (bool pauseIt);
-  	void PauseAmbient (bool pauseIt);
-  	void PauseAction (bool pauseIt);
+	void Pause(bool pauseIt);
+	void PauseMusic (bool pauseIt);
+	void PauseAmbient (bool pauseIt);
+	void PauseAction (bool pauseIt);
 
 protected:
 	void InitListener();
 	virtual Status AlcInit();
 
+private:
+	CSoundManager(CSoundManager* UNUSED(other)){};
 };
 
 #else // !CONFIG2_AUDIO

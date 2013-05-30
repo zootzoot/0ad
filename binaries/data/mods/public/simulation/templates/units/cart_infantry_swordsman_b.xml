@@ -2,16 +2,18 @@
 <Entity parent="template_unit_infantry_melee_swordsman">
   <Builder>
     <Entities datatype="tokens">
+      -structures/{civ}_blacksmith
       structures/cart_super_dock
       structures/cart_embassy_celtic
       structures/cart_embassy_iberian
       structures/cart_embassy_italiote
+      structures/{civ}_wonder
     </Entities>
   </Builder>
   <Cost>
     <Resources>
       <food>0</food>
-	  <metal>100</metal>
+	  <metal>80</metal>
     </Resources>
   </Cost>
   <Identity>

@@ -1,4 +1,4 @@
-/* Copyright (C) 2012 Wildfire Games.
+/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -25,6 +25,7 @@
 #include "soundmanager/items/CStreamItem.h"
 #include "soundmanager/js/SoundPlayer.h"
 #include "soundmanager/js/AmbientSound.h"
+#include "soundmanager/js/MusicList.h"
 #include "soundmanager/js/MusicSound.h"
 #include "soundmanager/js/Sound.h"
 #include "lib/external_libraries/libsdl.h"
@@ -40,6 +41,8 @@ CSoundManager* g_SoundManager = NULL;
 
 class CSoundManagerWorker
 {
+	NONCOPYABLE(CSoundManagerWorker);
+
 public:
 	CSoundManagerWorker()
 	{
@@ -59,9 +62,6 @@ public:
 		delete m_DeadItems;
 	}
 
-	/**
-	 * Called by main thread, when the online reporting is enabled/disabled.
-	 */
 	void SetEnabled(bool enabled)
 	{
 		CScopeLock lock(m_WorkerMutex);
@@ -71,17 +71,11 @@ public:
 		}
 	}
 
-	/**
-	 * Called by main thread to request shutdown.
-	 * Returns true if we've shut down successfully.
-	 * Returns false if shutdown is taking too long (we might be blocked on a
-	 * sync network operation) - you mustn't destroy this object, just leak it
-	 * and terminate.
-	 */
 	bool Shutdown()
 	{
 		{
 			CScopeLock lock(m_WorkerMutex);
+
 			m_Shutdown = true;
 			m_Enabled = false;
 
@@ -89,7 +83,7 @@ public:
 			while (lstr != m_Items->end())
 			{
 				delete *lstr;
-				lstr++;
+				++lstr;
 			}
 
 		}
@@ -98,6 +92,7 @@ public:
 
 		return true;
 	}
+
 	void addItem( ISoundItem* anItem )
 	{
 		CScopeLock lock(m_WorkerMutex);
@@ -112,7 +107,7 @@ public:
 		while (deadItems != m_DeadItems->end())
 		{   
 			delete *deadItems;
-			deadItems++;
+			++deadItems;
 
 			AL_CHECK
 		}
@@ -132,8 +127,6 @@ private:
 
 	void Run()
 	{
-
-		// Wait until the main thread wakes us up
 		while ( true )
 		{
 			g_Profiler2.RecordRegionLeave("semaphore wait");
@@ -146,7 +139,7 @@ private:
 			if (!GetEnabled())
 				continue;
 
-			int pauseTime = 1000;
+			int pauseTime = 500;
 			if ( g_SoundManager->InDistress() )
 				pauseTime = 50;
 
@@ -172,7 +165,7 @@ private:
 						CScopeLock lock(m_DeadItemsMutex);
 						m_DeadItems->push_back(*lstr);
 					}
-					lstr++;
+					++lstr;
 
 					AL_CHECK
 				}
@@ -207,12 +200,14 @@ private:
 	CMutex m_DeadItemsMutex;
 
 	// Shared by main thread and worker thread:
-	// These variables are all protected by m_WorkerMutex
+	// These variables are all protected by a mutexes
 	ItemsList* m_Items;
 	ItemsList* m_DeadItems;
 
 	bool m_Enabled;
 	bool m_Shutdown;
+
+	CSoundManagerWorker(CSoundManager* UNUSED(other)){};
 };
 #endif
 
@@ -222,6 +217,7 @@ void CSoundManager::ScriptingInit()
 	JMusicSound::ScriptingInit();
 	JSound::ScriptingInit();
 	JSoundPlayer::ScriptingInit();
+	JMusicList::ScriptingInit();
 }
 
 
@@ -261,14 +257,18 @@ CSoundManager::CSoundManager()
 {
 	m_CurrentEnvirons	= 0;
 	m_ALSourceBuffer	= NULL;
+	m_Device	= NULL;
+	m_Context	= NULL;
+	m_Worker	= NULL;
+	m_PlayListItems	= NULL;
 	m_CurrentTune		= 0;
-	m_SourceCOunt		= 0;
 	m_Gain				= 1;
 	m_MusicGain			= 1;
 	m_AmbientGain		= 1;
 	m_ActionGain		= 1;
 	m_BufferCount		= 50;
 	m_BufferSize		= 65536;
+	m_SoundEnabled		= true;
 	m_MusicEnabled		= true;
 	m_MusicPaused     = false;
 	m_AmbientPaused   = false;
@@ -277,26 +277,50 @@ CSoundManager::CSoundManager()
 	m_DistressTime	= 0;
 	m_DistressErrCount = 0;
 
-	m_Enabled			= AlcInit() == INFO::OK;
-	m_ItemsMap 			= new ItemsMap;
-	InitListener();
+	m_PlayingPlaylist = false;
+	m_LoopingPlaylist = false;
+	m_RunningPlaylist = false;
+	m_PlaylistGap      = 0;
 
-	m_Worker = new CSoundManagerWorker();
-	m_Worker->SetEnabled( true );
+	m_Enabled = false;
+	AlcInit();
+
+	if ( m_Enabled )
+	{
+		InitListener();
+
+		m_PlayListItems = new PlayList;
+
+		m_Worker = new CSoundManagerWorker();
+		m_Worker->SetEnabled( true );
+	}
 }
 
 CSoundManager::~CSoundManager()
-{	
-	if (m_Worker->Shutdown())
-		delete m_Worker;
+{
+	if (m_Worker )
+	{
+		AL_CHECK
+		m_Worker->Shutdown();
+		AL_CHECK
+		m_Worker->CleanupItems();
+		AL_CHECK
 
-	delete m_ItemsMap;
-	
+		delete m_Worker;
+	}
+	AL_CHECK
+
+	if ( m_PlayListItems )
+		delete m_PlayListItems;
+
 	if ( m_ALSourceBuffer != NULL )
 		delete[] m_ALSourceBuffer;
 
-	alcDestroyContext(m_Context);
-	alcCloseDevice(m_Device);
+	if ( m_Context )
+		alcDestroyContext(m_Context);
+	
+	if ( m_Device )
+		alcCloseDevice(m_Device);
 }
 
 
@@ -306,12 +330,12 @@ Status CSoundManager::AlcInit()
 	Status ret = INFO::OK;
 
 	m_Device = alcOpenDevice(NULL);
-	if(m_Device)
+	if (m_Device)
 	{
 		ALCint attribs[] = {ALC_STEREO_SOURCES, 16, 0};
 		m_Context = alcCreateContext(m_Device, &attribs[0]);
 
-		if(m_Context)
+		if (m_Context)
 		{
 			alcMakeContextCurrent(m_Context);
 			m_ALSourceBuffer = new ALSourceHolder[SOURCE_NUM];
@@ -329,6 +353,7 @@ Status CSoundManager::AlcInit()
 					m_ALSourceBuffer[x].SourceItem 	= NULL;
 
 				}
+				m_Enabled = true;
 			}
 			else
 			{
@@ -407,7 +432,6 @@ ALuint CSoundManager::GetALSource( ISoundItem* anItem)
 	{
 		if ( ! m_ALSourceBuffer[x].SourceItem )
 		{
-			m_SourceCOunt++;
 			m_ALSourceBuffer[x].SourceItem = anItem;
 			return m_ALSourceBuffer[x].ALSource;
 		}
@@ -422,7 +446,6 @@ void CSoundManager::ReleaseALSource(ALuint theSource)
 	{
 		if ( m_ALSourceBuffer[x].ALSource == theSource )
 		{
-			m_SourceCOunt--;
 			m_ALSourceBuffer[x].SourceItem = NULL;
 			return;
 		}
@@ -443,11 +466,50 @@ long CSoundManager::GetBufferSize()
 	return m_BufferSize;
 }
 
+void CSoundManager::AddPlayListItem( const VfsPath& itemPath)
+{
+  m_PlayListItems->push_back( itemPath );
+}
+
+void CSoundManager::ClearPlayListItems()
+{
+  if ( m_PlayingPlaylist )
+    SetMusicItem( NULL );
+
+  m_PlayingPlaylist = false;
+  m_LoopingPlaylist = false;
+  m_RunningPlaylist = false;
+
+  m_PlayListItems->clear();
+}
+
+void CSoundManager::StartPlayList( bool doLoop )
+{
+  if ( !m_PlayListItems->empty() )
+  {
+    m_PlayingPlaylist = true;
+    m_LoopingPlaylist = doLoop;
+    m_RunningPlaylist = false;
+    
+    ISoundItem* aSnd = g_SoundManager->LoadItem( (m_PlayListItems->at( 0 )) );
+    if ( aSnd )
+      SetMusicItem( aSnd );
+    else
+    {
+      SetMusicItem( NULL );
+    }
+  }
+}
+
+
 void CSoundManager::SetMasterGain(float gain)
 {
-	m_Gain = gain;
-	alListenerf( AL_GAIN, m_Gain);
-	AL_CHECK
+	if ( m_Enabled )
+	{
+		m_Gain = gain;
+		alListenerf( AL_GAIN, m_Gain);
+		AL_CHECK
+	}
 }
 
 void CSoundManager::SetMusicGain(float gain)
@@ -468,11 +530,14 @@ ISoundItem* CSoundManager::LoadItem(const VfsPath& itemPath)
 {	
 	AL_CHECK
 
-	CSoundData* itemData = CSoundData::SoundDataFromFile(itemPath);
+	if ( m_Enabled )
+	{
+		CSoundData* itemData = CSoundData::SoundDataFromFile(itemPath);
 
-	AL_CHECK
-	if ( itemData )
-		return CSoundManager::ItemForData( itemData );
+		AL_CHECK
+		if ( itemData )
+			return CSoundManager::ItemForData( itemData );
+	}
 
 	return NULL;
 }
@@ -484,7 +549,7 @@ ISoundItem* CSoundManager::ItemForData(CSoundData* itemData)
 
 	AL_CHECK
 	
-	if (itemData != NULL)
+	if ( m_Enabled && (itemData != NULL) )
 	{
 		if (itemData->IsOneShot())
 		{
@@ -508,47 +573,54 @@ ISoundItem* CSoundManager::ItemForData(CSoundData* itemData)
 
 void CSoundManager::IdleTask()
 {
-	AL_CHECK
-	if (m_CurrentTune)
-		m_CurrentTune->EnsurePlay();
-	AL_CHECK
-	if (m_CurrentEnvirons)
-		m_CurrentEnvirons->EnsurePlay();
-	AL_CHECK
-	if (m_Worker)
-		m_Worker->CleanupItems();
-	AL_CHECK
-}
-
-ISoundItem*	CSoundManager::ItemForEntity( entity_id_t source, CSoundData* sndData)
-{
-	ISoundItem*		currentItem = NULL;
-	if ( false ) 
+	if ( m_Enabled )
 	{
-		ItemsMap::iterator		itemFound = m_ItemsMap->find( source );
-		if ( itemFound != m_ItemsMap->end() )
+		if (m_CurrentTune)
 		{
-			currentItem = itemFound->second;
-			if ( currentItem->CanAttach( sndData ) )
+			m_CurrentTune->EnsurePlay();
+			if ( m_PlayingPlaylist && m_RunningPlaylist )
 			{
-				currentItem->Attach( sndData );
-				LOGERROR(L"did REUSE items source = %d", m_SourceCOunt);
-			}
-			else
-			{
-				m_ItemsMap->erase( itemFound );
-				currentItem->StopAndDelete();
-				LOGERROR(L"item UNREUSABLE for data = %d", m_SourceCOunt);
-				currentItem = NULL;
+				if ( m_CurrentTune->Finished() )
+				{
+					if ( m_PlaylistGap == 0 )
+					{
+						m_PlaylistGap = timer_Time() + 15;
+					}
+					else if ( m_PlaylistGap < timer_Time() )
+					{
+						m_PlaylistGap = 0;
+						PlayList::iterator it = find (m_PlayListItems->begin(), m_PlayListItems->end(), *(m_CurrentTune->GetName()) );
+						++it;
+
+						Path nextPath;
+						if ( it == m_PlayListItems->end() )
+							nextPath = m_PlayListItems->at( 0 );
+						else
+							nextPath = *it;
+
+						ISoundItem* aSnd = g_SoundManager->LoadItem( nextPath );
+						if ( aSnd )
+							SetMusicItem( aSnd );
+					}
+				}
 			}
 		}
+
+		if (m_CurrentEnvirons)
+			m_CurrentEnvirons->EnsurePlay();
+
+		if (m_Worker)
+			m_Worker->CleanupItems();
+
 	}
-	if ( currentItem == NULL )
-	{
+}
+
+ISoundItem*	CSoundManager::ItemForEntity( entity_id_t UNUSED(source), CSoundData* sndData)
+{
+	ISoundItem* currentItem = NULL;
+
+	if ( m_Enabled )
 		currentItem = ItemForData( sndData );
-		if ( currentItem )
-			m_ItemsMap->insert(std::make_pair( source, currentItem));		
-	}
 
 	return currentItem;
 }
@@ -579,6 +651,7 @@ void CSoundManager::PlayActionItem(ISoundItem* anItem)
 		}
 	}
 }
+
 void CSoundManager::PlayGroupItem(ISoundItem* anItem, ALfloat groupGain )
 {
 	if (anItem)
@@ -617,9 +690,16 @@ void CSoundManager::SetMusicItem(ISoundItem* anItem)
 		if (m_MusicEnabled && m_Enabled)
 		{
 			m_CurrentTune = anItem;
-			m_CurrentTune->SetIsManaged( true );
 			m_CurrentTune->SetGain(0);
-			m_CurrentTune->PlayLoop();
+
+			if ( m_PlayingPlaylist )
+			{
+				m_RunningPlaylist = true;
+				m_CurrentTune->Play();
+			}
+			else
+				m_CurrentTune->PlayLoop();
+
 			m_CurrentTune->FadeToIn( m_MusicGain, 1.00);
 		}
 		else
@@ -644,7 +724,6 @@ void CSoundManager::SetAmbientItem(ISoundItem* anItem)
 		if (m_Enabled && (m_AmbientGain > 0))
 		{
 			m_CurrentEnvirons = anItem;
-			m_CurrentEnvirons->SetIsManaged( true );
 			m_CurrentEnvirons->SetGain(0);
 			m_CurrentEnvirons->PlayLoop();
 			m_CurrentEnvirons->FadeToIn( m_AmbientGain, 2.00);
@@ -663,12 +742,17 @@ void CSoundManager::Pause(bool pauseIt)
 
 void CSoundManager::PauseMusic (bool pauseIt)
 {
-  if (m_CurrentTune && pauseIt)
-    m_CurrentTune->Pause();
-  else if ( m_CurrentTune )
-    m_CurrentTune->Resume();
-
-  m_MusicPaused = pauseIt;
+	if (m_CurrentTune && pauseIt && !m_MusicPaused )
+	{
+		m_CurrentTune->FadeAndPause( 1.0 );
+	}
+	else if ( m_CurrentTune && m_MusicPaused && !pauseIt )
+	{
+		m_CurrentTune->SetGain(0);
+		m_CurrentTune->Resume();
+		m_CurrentTune->FadeToIn( m_MusicGain, 1.0);
+	}
+	m_MusicPaused = pauseIt;
 }
 
 void CSoundManager::PauseAmbient (bool pauseIt)
