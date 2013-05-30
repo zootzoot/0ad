@@ -90,12 +90,13 @@ AttackDetection.prototype.GetSuppressionTime = function()
 AttackDetection.prototype.HandleTimeout = function()
 {
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
+	var now = cmpTimer.GetTime();
 	for (var i = 0; i < this.suppressedList.length; i++)
 	{
 		var event = this.suppressedList[i];
 		
 		// Check if this event has timed out.
-		if (cmpTimer.GetTime() - event.time >= this.suppressionTime)
+		if (now - event.time >= this.suppressionTime)
 		{
 			this.suppressedList.splice(i, 1);
 			i--;
