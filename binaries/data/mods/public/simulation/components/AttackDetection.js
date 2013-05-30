@@ -16,14 +16,14 @@ AttackDetection.prototype.Init = function()
 };
 
 // Utility function for calculating the distance between two attack events.
-AttackDetection.prototype.distance = function(pos1, pos2)
+AttackDetection.prototype.Distance = function(pos1, pos2)
 {
 	var xs = pos2.x - pos1.x;
 	var zs = pos2.z - pos1.z;
 	return Math.sqrt(Math.pow(xs, 2) + Math.pow(zs, 2));
 }
 
-AttackDetection.prototype.addSuppression = function(event)
+AttackDetection.prototype.AddSuppression = function(event)
 {
 	this.suppressedList.push(event);
 
@@ -67,7 +67,7 @@ AttackDetection.prototype.AttackAlert = function(target, attacker)
 		
 		// If the new attack is within suppression distance of this element then check if the element should be updated
 		// and then return.
-		var dist = this.distance(element.position, event.position);
+		var dist = this.Distance(element.position, event.position);
 		if (dist < this.suppressionRange)
 		{
 			if (dist < this.suppressionTransferRange)
@@ -76,7 +76,7 @@ AttackDetection.prototype.AttackAlert = function(target, attacker)
 		}
 	}
 	
-	this.addSuppression(event);
+	this.AddSuppression(event);
 	Engine.PostMessage(this.entity, MT_AttackDetected, { "player": cmpPlayer.GetPlayerID(), "event": event });
 	var cmpGuiInterface = Engine.QueryInterface(SYSTEM_ENTITY, IID_GuiInterface);
 	cmpGuiInterface.PushNotification({"type": "attack", "player": cmpPlayer.GetPlayerID(), "message": event});
