@@ -21,7 +21,7 @@ AttackDetection.prototype.Distance = function(pos1, pos2)
 	var xs = pos2.x - pos1.x;
 	var zs = pos2.z - pos1.z;
 	return Math.sqrt(Math.pow(xs, 2) + Math.pow(zs, 2));
-}
+};
 
 AttackDetection.prototype.AddSuppression = function(event)
 {
@@ -29,7 +29,7 @@ AttackDetection.prototype.AddSuppression = function(event)
 
 	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
 	cmpTimer.SetTimeout(this.entity, IID_AttackDetection, "HandleTimeout", this.suppressionTime);
-}
+};
 
 //// Message handlers ////
 
