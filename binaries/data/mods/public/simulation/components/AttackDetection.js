@@ -8,9 +8,9 @@ AttackDetection.prototype.Schema =
 
 AttackDetection.prototype.Init = function()
 {
-	this.suppressionTransferRange = 50; // Any attacks within this range will replace the previous attack suppression.
-	this.suppressionRange = 150; // Other attacks within this distance will not be registered.
-	this.suppressionTime = 40 * 1000; // Other attacks within this time will not be registered.
+	this.suppressionTransferRange = 50; // Any attacks within this range in meters will replace the previous attack suppression.
+	this.suppressionRange = 150; // Other attacks within this range in meters will not be registered.
+	this.suppressionTime = 40 * 1000; // Other attacks within this time in milliseconds will not be registered.
 
 	this.suppressionTransferRangeSquared = this.suppressionTransferRange*this.suppressionTransferRange;
 	this.suppressionRangeSquared = this.suppressionRange*this.suppressionRange;
