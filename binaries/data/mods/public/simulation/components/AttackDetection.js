@@ -1,3 +1,11 @@
+// Utility function for calculating the squared-distance between two attack events.
+function SquaredDistance(pos1, pos2)
+{
+	var xs = pos2.x - pos1.x;
+	var zs = pos2.z - pos1.z;
+	return xs*xs + zs*zs;
+};
+
 function AttackDetection() {}
 
 AttackDetection.prototype.Schema =
@@ -15,14 +23,6 @@ AttackDetection.prototype.Init = function()
 	this.suppressionTransferRangeSquared = this.suppressionTransferRange*this.suppressionTransferRange;
 	this.suppressionRangeSquared = this.suppressionRange*this.suppressionRange;
 	this.suppressedList = [];
-};
-
-// Utility function for calculating the squared-distance between two attack events.
-AttackDetection.prototype.SquaredDistance = function(pos1, pos2)
-{
-	var xs = pos2.x - pos1.x;
-	var zs = pos2.z - pos1.z;
-	return xs*xs + zs*zs;
 };
 
 AttackDetection.prototype.AddSuppression = function(event)
@@ -69,7 +69,7 @@ AttackDetection.prototype.AttackAlert = function(target, attacker)
 		
 		// If the new attack is within suppression distance of this element then check if the element should be updated
 		// and then return.
-		var dist = this.SquaredDistance(element.position, event.position);
+		var dist = SquaredDistance(element.position, event.position);
 		if (dist < this.suppressionRangeSquared)
 		{
 			if (dist < this.suppressionTransferRangeSquared)
