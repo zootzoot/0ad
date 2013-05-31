@@ -44,6 +44,15 @@ Armour.prototype.SetInvulnerability = function(invulnerability)
 
 Armour.prototype.TakeDamage = function(hack, pierce, crush, source)
 {
+	// Alert target owner of attack
+	var cmpOwnership = Engine.QueryInterface(this.entity, IID_Ownership);
+	var cmpAttackDetection = QueryPlayerIDInterface(cmpOwnership.GetOwner(), IID_AttackDetection);
+	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
+	var now = cmpTimer.GetTime();
+	if (!(this.lastAttack > now - cmpAttackDetection.GetSuppressionTime()))
+		cmpAttackDetection.AttackAlert(this.entity, source);
+	this.lastAttack = now;
+
 	if (this.invulnerable) 
 		return { "killed": false };
 
@@ -56,15 +65,6 @@ Armour.prototype.TakeDamage = function(hack, pierce, crush, source)
 	// Total is sum of individual damages, with minimum damage 1
 	//	Round to nearest integer, since HP is integral
 	var total = Math.max(1, Math.round(adjHack + adjPierce + adjCrush));
-
-	// Alert target owner of attack
-	var cmpOwnership = Engine.QueryInterface(this.entity, IID_Ownership);
-	var cmpAttackDetection = QueryPlayerIDInterface(cmpOwnership.GetOwner(), IID_AttackDetection);
-	var cmpTimer = Engine.QueryInterface(SYSTEM_ENTITY, IID_Timer);
-	var now = cmpTimer.GetTime();
-	if (!(this.lastAttack > now - cmpAttackDetection.GetSuppressionTime()))
-		cmpAttackDetection.AttackAlert(this.entity, source);
-	this.lastAttack = now;
 
 	// Reduce health
 	var cmpHealth = Engine.QueryInterface(this.entity, IID_Health);
