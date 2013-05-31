@@ -11,7 +11,6 @@ function AttackDetection() {}
 AttackDetection.prototype.Schema =
 	"<a:help>Detects incoming attacks.</a:help>" +
 	"<a:example/>" +
-	"<a:component type='system'/>" +
 	"<empty/>";
 
 AttackDetection.prototype.Init = function()
