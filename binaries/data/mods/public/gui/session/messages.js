@@ -81,7 +81,16 @@ function handleNotifications()
 	else if (notification.type == "attack")
 	{
 		if (notification.player == Engine.GetPlayerID())
+		{
+/*
+TODO: Textual attack notification disabled until a configuration check is implemented.
+			addChatMessage({
+				"type": "attack",
+				"player": notification.player
+			});
+*/
 			Engine.GuiInterfaceCall("PlaySound", { "name":"attacked", "entity": notification.message.target });
+		}
 	}
 	else
 	{
@@ -365,7 +374,7 @@ function addChatMessage(msg, playerAssignments)
 		if (msg.player != Engine.GetPlayerID()) 
 			return;
 
-		formatted = "We're under attack!";
+		formatted = "You are under attack.";
 		break;
 	case "message":
 		// May have been hidden by the 'team' command.
