@@ -27,8 +27,7 @@
   </Minimap>
   <Sound>
     <SoundGroups>
-      <trained>interface/alarm/alarm_create_worker.xml</trained>
-      <attacked>interface/alarm/alarm_attackplayer.xml</attacked>
+      <trained>interface/alarm/alarm_create_worker.xml</trained>      
     </SoundGroups>
   </Sound>
   <UnitAI>

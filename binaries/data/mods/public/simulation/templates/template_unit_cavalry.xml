@@ -78,8 +78,7 @@
       <order_gather>voice/hellenes/civ/civ_male_ack.xml</order_gather>
       <walk>actor/mounted/movement/walk.xml</walk>
       <run>actor/mounted/movement/walk.xml</run>
-      <attack>attack/weapon/sword.xml</attack>
-      <attacked>interface/alarm/alarm_attackplayer.xml</attacked>
+      <attack>attack/weapon/sword.xml</attack>      
       <death>actor/fauna/death/death_horse.xml</death>
       <trained>interface/alarm/alarm_create_cav.xml</trained>
     </SoundGroups>
