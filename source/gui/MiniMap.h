@@ -27,10 +27,6 @@
 class CCamera;
 class CTerrain;
 
-// Pinging constants - Controls blink duration of the ping, smaller means higher
-// ping frequency
-const unsigned int PING_DURATION = 50;
-
 class CMiniMap : public IGUIObject
 {
 	GUI_OBJECT(CMiniMap)
@@ -89,9 +85,6 @@ protected:
 	
 	// maximal water height to allow the passage of a unit (for underwater shallows).
 	float m_ShallowPassageHeight;
-
-	// For tracking the ping color
-	u32 m_ChangePingColor;
 
 	void DrawTexture(float coordMax, float angle, float x, float y, float x2, float y2, float z);
 

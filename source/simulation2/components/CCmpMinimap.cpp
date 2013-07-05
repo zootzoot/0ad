@@ -27,6 +27,9 @@
 
 #include "ps/Overlay.h"
 #include "ps/Game.h"
+#include "ps/ConfigDB.h"
+
+#include "lib/timer.h"
 
 class CCmpMinimap : public ICmpMinimap
 {
@@ -53,12 +56,13 @@ public:
 
 
 	// Used by the minimap while pinging this entity to indicate something (e.g. an attack)
-	// Entity not pinged after MAX_PING_TURNS if it wasn't notified in between
-	static const u32 MAX_PING_FRAMES = 500;
-	bool m_PingEntity;
-	u32 m_PingCount;
-
-
+	// Entity not pinged after m_PingDuration unless its notified in between
+	double m_PingDuration;
+	double m_BlinkDuration;
+	double m_HalfBlinkDuration;
+	double m_PingStartTime;
+	double m_LastBlinkStartTime;
+	bool m_IsPinging;
 
 	static std::string GetSchema()
 	{
@@ -94,7 +98,35 @@ public:
 	virtual void Init(const CParamNode& paramNode)
 	{
 		m_Active = true;
-		m_PingEntity = false;
+		m_IsPinging = false;
+
+		const CParamNode& active = paramNode.GetChild("active");
+		if (active.IsOk())
+		{
+			m_Active = active.GetChild("@active").ToBool();
+
+			const CParamNode& pinging = paramNode.GetChild("pinging");
+			if (pinging.IsOk())
+				m_IsPinging = pinging.GetChild("@pinging").ToBool();
+		}
+
+		// Ping blinking durations
+		m_PingStartTime = 0;
+		m_LastBlinkStartTime = m_PingStartTime;
+
+		// Tests won't have config initialised
+		if (CConfigDB::IsInitialised())
+		{
+			CFG_GET_VAL("pingduration", Double, m_PingDuration);
+			CFG_GET_VAL("blinkduration", Double, m_BlinkDuration);
+		}
+		else
+		{
+			m_PingDuration = 25.f;
+			m_BlinkDuration = 1.f;
+		}
+
+		m_HalfBlinkDuration = m_BlinkDuration/2;
 
 		const CParamNode& colour = paramNode.GetChild("Colour");
 		if (colour.IsOk())
@@ -134,6 +166,9 @@ public:
 		{
 			serialize.NumberFixed_Unbounded("x", m_X);
 			serialize.NumberFixed_Unbounded("z", m_Z);
+
+			// Serialize the ping state
+			serialize.Bool("pinging", m_IsPinging);
 		}
 	}
 
@@ -210,8 +245,9 @@ public:
 				break;
 
 			m_Active = true;
-			m_PingEntity = true;
-			m_PingCount = MAX_PING_FRAMES;
+			m_IsPinging = true;
+			m_PingStartTime = timer_Time();
+			m_LastBlinkStartTime = m_PingStartTime;
 
 			break;
 		}
@@ -231,25 +267,36 @@ public:
 		return true;
 	}
 
-	virtual bool IsEntityPinging(void)
+	virtual bool IsPinging(void)
 	{
 		if (!m_Active)
 			return false;
 
-		return m_PingEntity;
+		return m_IsPinging;
 	}
 
-	virtual u32 GetRemainingPingCount(void)
+	virtual bool CheckPing(void)
 	{
-		return m_PingCount;
-	}
+		double currentTime = timer_Time();
+		double dt = currentTime - m_PingStartTime;
+		if (dt > m_PingDuration)
+		{
+			m_IsPinging = false;
+			m_PingStartTime = 0;
+			m_LastBlinkStartTime = m_PingStartTime;
+		}
 
-	virtual void SetRemainingPingCount(u32 pingCount)
-	{
-		m_PingCount = pingCount;
+		dt = currentTime - m_LastBlinkStartTime;
+		// Return true for dt > 0 && dt < m_HalfBlinkDuration
+		if (dt < m_HalfBlinkDuration)
+			return true;
 
-		if (m_PingCount == 0)
-			m_PingEntity = false;
+		// Reset if this blink is complete
+		if (dt > m_BlinkDuration)
+			m_LastBlinkStartTime = currentTime;
+
+		// Return false for dt >= m_HalfBlinkDuration && dt < m_BlinkDuration
+		return false;
 	}
 };
 

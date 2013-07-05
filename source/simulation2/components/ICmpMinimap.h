@@ -38,17 +38,13 @@ public:
 	/**
 	 * Returns true if the unit is pinging.
 	 */
-	virtual bool IsEntityPinging(void) = 0;
+	virtual bool IsPinging(void) = 0;
 
 	/**
-	 * Returns the current ping count.
+	 * Adjust ping count and return true if pinged entity should be
+	 * drawn in alternate color.
 	 */
-	virtual u32 GetRemainingPingCount(void) = 0;
-
-	/**
-	 * Used by the minimap to set the ping count, controls pinging.
-	 */
-	virtual void SetRemainingPingCount(u32 pingCount) = 0;
+	virtual bool CheckPing(void) = 0;
 
 	DECLARE_INTERFACE_TYPE(Minimap)
 };

@@ -69,8 +69,6 @@ CMiniMap::CMiniMap() :
 		m_ShallowPassageHeight = pathingSettings.GetChild("default").GetChild("MaxWaterDepth").ToFloat();
 	else
 		m_ShallowPassageHeight = 0.0f;
-
-	m_ChangePingColor = 0;
 }
 
 CMiniMap::~CMiniMap()
@@ -473,27 +471,18 @@ void CMiniMap::Draw()
 				v.y = -posZ.ToFloat()*sy;
 
 				// Check minimap pinging to indicate something
-				if (cmpMinimap->IsEntityPinging()) {
-
+				if (cmpMinimap->IsPinging())
+				{
 					// Override the normal rendering of the entity with the ping color
 					// Note: If the pinged entity's dot is rendered over by another entity's
 					// dot then it will be invisible & the ping will be not be seen.
 					// We can try to move the pinged dots towards the end in the vertexArray
 					// Keep 2 pointers and insert pinged dots at end, unpinged at current position
-					if (m_ChangePingColor > PING_DURATION/2) {
-						v.r = 255; // bright red
-						v.g = 1;
-						v.b = 1;
-					}
-
-					// Must reduce ping count every frame
-					u32 pingCount = cmpMinimap->GetRemainingPingCount();
-					if (pingCount <= 0) {
-						// Also turns off ping flag if 0 passed in
-						cmpMinimap->SetRemainingPingCount(0);
-					}
-					else {
-						cmpMinimap->SetRemainingPingCount(pingCount - 1);
+					if (cmpMinimap->CheckPing())
+					{
+						v.r = 255; // ping color is white
+						v.g = 255;
+						v.b = 255;
 					}
 				}
 
@@ -501,9 +490,6 @@ void CMiniMap::Draw()
 			}
 		}
 	}
-
-	// Cycle the ping color counter as needed
-	m_ChangePingColor = (m_ChangePingColor + 1) > PING_DURATION ? 0 : (m_ChangePingColor + 1);
 
 	if (!vertexArray.empty())
 	{
