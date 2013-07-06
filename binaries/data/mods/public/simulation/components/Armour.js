@@ -46,7 +46,7 @@ Armour.prototype.SetInvulnerability = function(invulnerability)
  * Take damage according to the entity's armor.
  * Returns object of the form { "killed": false, "change": -12 }
  */
-Armour.prototype.TakeDamage = function(hack, pierce, crush)
+Armour.prototype.TakeDamage = function(hack, pierce, crush, source)
 {
 	// Alert target owner of attack
 	var cmpOwnership = Engine.QueryInterface(this.entity, IID_Ownership);
