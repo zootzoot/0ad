@@ -82,13 +82,12 @@ function handleNotifications()
 	{
 		if (notification.player == Engine.GetPlayerID())
 		{
-/*
-TODO: Textual attack notification disabled until a configuration check is implemented.
-			addChatMessage({
-				"type": "attack",
-				"player": notification.player
-			});
-*/
+			if (+g_ConfigDB.system["gui.textualattacknotification"]) {
+				addChatMessage({
+					"type": "attack",
+					"player": notification.player
+				});
+			}
 			Engine.GuiInterfaceCall("PlaySound", { "name":"attacked", "entity": notification.message.target });
 		}
 	}
