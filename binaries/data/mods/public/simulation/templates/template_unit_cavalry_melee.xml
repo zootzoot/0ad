@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Entity parent="template_unit_cavalry">
+  <Armour>
+    <Hack>1</Hack>
+    <Pierce>5</Pierce>
+    <Crush>2</Crush>
+  </Armour>
   <Attack>
     <Melee>
       <Hack>10.0</Hack>
@@ -21,7 +26,7 @@
 		  <Multiplier>2.0</Multiplier>
 		</BonusSiege>
 	  </Bonuses>
-      <PreferredClasses datatype="tokens">Organic Siege</PreferredClasses>
+      <PreferredClasses datatype="tokens">Siege</PreferredClasses>
       <RestrictedClasses datatype="tokens">StoneWall</RestrictedClasses>
     </Melee>
     <Charge>
@@ -40,7 +45,7 @@
 		  <Multiplier>0.5</Multiplier>
 		</CamelStench>
 	  </Bonuses>
-      <PreferredClasses datatype="tokens">Organic Siege</PreferredClasses>
+      <PreferredClasses datatype="tokens">Siege</PreferredClasses>
       <RestrictedClasses datatype="tokens">StoneWall</RestrictedClasses>
     </Charge>
   </Attack>

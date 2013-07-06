@@ -260,7 +260,7 @@ function getActionInfo(action, target)
 			cursor = "action-repair";
 		}
 		else if (hasClass(entState, "Market") && hasClass(targetState, "Market") && entState.id != targetState.id &&
-				(!hasClass(entState, "NavalMarket") || hasClass(targetState, "NavalMarket")))
+				(!hasClass(entState, "NavalMarket") || hasClass(targetState, "NavalMarket")) && !enemyOwned)
 		{
 			// Find a trader (if any) that this building can produce.
 			var trader;
@@ -277,7 +277,11 @@ function getActionInfo(action, target)
 				data.target = traderData.secondMarket;
 				data.source = traderData.firstMarket;
 				cursor = "action-setup-trade-route";
-				tooltip = "Click to establish a default route for new traders. Gain: " + gain + " metal.";
+				tooltip = "Click to establish a default route for new traders.";
+				if (trader)
+					tooltip += " Gain: " + gain + " metal.";
+				else // Foundation or cannot produce traders
+					tooltip += " Expected gain: " + gain + " metal.";
 			}
 		}
 
@@ -1502,6 +1506,33 @@ function selectTradingPreferredGoods(data)
 function exchangeResources(command)
 {
 	Engine.PostNetworkCommand({"type": "barter", "sell": command.sell, "buy": command.buy, "amount": command.amount});
+}
+
+// Camera jumping: when the user presses a hotkey the current camera location is marked.
+// When they press another hotkey the camera jumps back to that position. If the camera is already roughly at that location,
+// jump back to where it was previously.
+var jumpCameraPositions = [], jumpCameraLast;
+
+function jumpCamera(index)
+{
+	var position = jumpCameraPositions[index], distanceThreshold = g_ConfigDB.system["camerajump.threshold"];
+	if (position)
+	{
+		if (jumpCameraLast &&
+				Math.abs(Engine.CameraGetX() - position.x) < distanceThreshold &&
+				Math.abs(Engine.CameraGetZ() - position.z) < distanceThreshold)
+			Engine.CameraMoveTo(jumpCameraLast.x, jumpCameraLast.z);
+		else
+		{
+			jumpCameraLast = {x: Engine.CameraGetX(), z: Engine.CameraGetZ()};
+			Engine.CameraMoveTo(position.x, position.z);
+		}
+	}
+}
+
+function setJumpCamera(index)
+{
+	jumpCameraPositions[index] = {x: Engine.CameraGetX(), z: Engine.CameraGetZ()};
 }
 
 // Batch training:

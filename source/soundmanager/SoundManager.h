@@ -22,24 +22,22 @@
 
 #if CONFIG2_AUDIO
 
+#include "lib/external_libraries/openal.h"
+
+
 #include "lib/file/vfs/vfs_path.h"
+#include "soundmanager/ISoundManager.h"
 #include "soundmanager/items/ISoundItem.h"
 #include "simulation2/system/Entity.h"
 #include "soundmanager/data/SoundData.h"
 #include "soundmanager/items/ISoundItem.h"
+#include "soundmanager/scripting/SoundGroup.h"
 #include "ps/Profiler2.h"
 
 #include <vector>
 #include <map>
 
 #define AL_CHECK CSoundManager::al_check(__func__, __LINE__);
-
-typedef std::vector<VfsPath> PlayList;
-typedef std::vector<ISoundItem*> ItemsList;
-typedef std::map<entity_id_t, ISoundItem*> ItemsMap;
-
-class CSoundManagerWorker;
-
 
 struct ALSourceHolder
 {
@@ -48,7 +46,15 @@ struct ALSourceHolder
 	ISoundItem*	SourceItem;
 };
 
-class CSoundManager
+typedef std::vector<VfsPath> PlayList;
+typedef std::vector<ISoundItem*> ItemsList;
+typedef std::map<entity_id_t, ISoundItem*> ItemsMap;
+typedef	std::map<std::wstring, CSoundGroup*> SoundGroupMap;
+
+class CSoundManagerWorker;
+
+
+class CSoundManager : public ISoundManager
 {
 	NONCOPYABLE(CSoundManager);
 
@@ -62,11 +68,13 @@ protected:
 	CSoundManagerWorker* m_Worker;
 	CMutex m_DistressMutex;
 	PlayList* m_PlayListItems;
+	SoundGroupMap m_SoundGroups;
 
 	float m_Gain;
 	float m_MusicGain;
 	float m_AmbientGain;
 	float m_ActionGain;
+	float m_UIGain;
 	bool m_Enabled;
 	long m_BufferSize;
 	int m_BufferCount;
@@ -96,7 +104,7 @@ public:
 
 	void ClearPlayListItems();
 	void StartPlayList( bool doLoop );
-	void AddPlayListItem( const VfsPath& itemPath);
+	void AddPlayListItem( const VfsPath* itemPath);
 
 	static void ScriptingInit();
 	static void CreateSoundManager();
@@ -123,15 +131,13 @@ public:
 	long GetBufferCount();
 	long GetBufferSize();
 
-	void SetMusicItem(ISoundItem* anItem);
-	void SetAmbientItem(ISoundItem* anItem);
-	void PlayActionItem(ISoundItem* anItem);
+	void PlayAsMusic( const VfsPath& itemPath, bool looping );
+	void PlayAsAmbient( const VfsPath& itemPath, bool looping );
+	void PlayAsUI(const VfsPath& itemPath, bool looping);
+	void PlayAsGroup(const VfsPath& groupPath, CVector3D sourcePos, entity_id_t source, bool ownedSound);
+
 	void PlayGroupItem(ISoundItem* anItem, ALfloat groupGain);
 
-	void SetMasterGain(float gain);
-	void SetMusicGain(float gain);
-	void SetAmbientGain(float gain);
-	void SetActionGain(float gain);
 	bool InDistress();
 	void SetDistressThroughShortage();
 	void SetDistressThroughError();
@@ -143,7 +149,14 @@ public:
 
 protected:
 	void InitListener();
-	virtual Status AlcInit();
+	Status AlcInit();
+	void SetMusicItem(ISoundItem* anItem);
+	void SetAmbientItem(ISoundItem* anItem);
+	void SetMasterGain(float gain);
+	void SetMusicGain(float gain);
+	void SetAmbientGain(float gain);
+	void SetActionGain(float gain);
+	void SetUIGain(float gain);
 
 private:
 	CSoundManager(CSoundManager* UNUSED(other)){};
@@ -153,15 +166,7 @@ private:
 
 #define AL_CHECK
 
-class CSoundManager
-{
-public:
-	static void ScriptingInit();
-};
 #endif // !CONFIG2_AUDIO
-
-
-extern CSoundManager*  g_SoundManager;
 
 #endif // INCLUDED_SOUNDMANAGER_H
 

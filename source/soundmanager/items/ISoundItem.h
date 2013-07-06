@@ -22,7 +22,6 @@
 
 #if CONFIG2_AUDIO
 
-#include "lib/external_libraries/openal.h"
 #include "maths/Vector3D.h"
 #include "ps/CStr.h"
 #include "soundmanager/data/SoundData.h"
@@ -48,21 +47,19 @@ public:
 	virtual void Attach(CSoundData* itemData) = 0;
 
 	virtual void EnsurePlay() = 0;
-	virtual void PlayAsMusic() = 0;
-	virtual void PlayAsAmbient() = 0;
 
 	virtual void PlayAndDelete() = 0;
 	virtual void StopAndDelete() = 0;
-	virtual void FadeToIn(ALfloat newVolume, double fadeDuration) = 0;
+	virtual void FadeToIn(float newVolume, double fadeDuration) = 0;
 	virtual void FadeAndDelete(double fadeTime) = 0;
 	virtual void FadeAndPause(double fadeTime) = 0;
 	virtual void PlayLoop() = 0;
 
-	virtual void SetCone(ALfloat innerCone, ALfloat outerCone, ALfloat coneGain) = 0;
-	virtual void SetPitch(ALfloat pitch) = 0;
-	virtual void SetGain(ALfloat gain) = 0;
+	virtual void SetCone(float innerCone, float outerCone, float coneGain) = 0;
+	virtual void SetPitch(float pitch) = 0;
+	virtual void SetGain(float gain) = 0;
 	virtual void SetLocation(const CVector3D& position) = 0;
-	virtual void SetRollOff(ALfloat gain) = 0;
+	virtual void SetRollOff(float gain) = 0;
 
 	virtual void Pause() = 0;
 	virtual void Resume() = 0;

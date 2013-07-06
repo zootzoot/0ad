@@ -124,5 +124,6 @@
   <VisualActor>
     <SilhouetteDisplay>true</SilhouetteDisplay>
     <SilhouetteOccluder>false</SilhouetteOccluder>
+    <VisibleInAtlasOnly>false</VisibleInAtlasOnly>
   </VisualActor>
 </Entity>

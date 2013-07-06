@@ -42,7 +42,11 @@ Armour.prototype.SetInvulnerability = function(invulnerability)
 	this.invulnerable = invulnerability;
 };
 
-Armour.prototype.TakeDamage = function(hack, pierce, crush, source)
+/**
+ * Take damage according to the entity's armor.
+ * Returns object of the form { "killed": false, "change": -12 }
+ */
+Armour.prototype.TakeDamage = function(hack, pierce, crush)
 {
 	// Alert target owner of attack
 	var cmpOwnership = Engine.QueryInterface(this.entity, IID_Ownership);
@@ -54,7 +58,7 @@ Armour.prototype.TakeDamage = function(hack, pierce, crush, source)
 	this.lastAttack = now;
 
 	if (this.invulnerable) 
-		return { "killed": false };
+		return { "killed": false, "change": 0 };
 
 	// Adjust damage values based on armour; exponential armour: damage = attack * 0.9^armour
 	var armourStrengths = this.GetArmourStrengths();
@@ -62,9 +66,9 @@ Armour.prototype.TakeDamage = function(hack, pierce, crush, source)
 	var adjPierce = pierce * Math.pow(0.9, armourStrengths.pierce);
 	var adjCrush = crush * Math.pow(0.9, armourStrengths.crush);
 
-	// Total is sum of individual damages, with minimum damage 1
-	//	Round to nearest integer, since HP is integral
-	var total = Math.max(1, Math.round(adjHack + adjPierce + adjCrush));
+	// Total is sum of individual damages
+	// Don't bother rounding, since HP is no longer integral.
+	var total = Math.max(1, adjHack + adjPierce + adjCrush);
 
 	// Reduce health
 	var cmpHealth = Engine.QueryInterface(this.entity, IID_Health);

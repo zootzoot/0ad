@@ -46,7 +46,7 @@
 #include "simulation2/Simulation2.h"
 #include "simulation2/components/ICmpPlayer.h"
 #include "simulation2/components/ICmpPlayerManager.h"
-#include "soundmanager/SoundManager.h"
+#include "soundmanager/ISoundManager.h"
 
 extern bool g_GameRestarted;
 
@@ -304,10 +304,9 @@ bool CGame::Update(const double deltaRealTime, bool doInterpolate)
 	if (doInterpolate)
 	{
 		m_TurnManager->Interpolate(deltaSimTime, deltaRealTime);
-#if CONFIG2_AUDIO
+
 		if ( g_SoundManager )
 			g_SoundManager->IdleTask();
-#endif
 	}
 
 	return ok;

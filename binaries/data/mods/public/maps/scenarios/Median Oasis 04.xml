@@ -35,15 +35,14 @@
 		</Postproc>
 	</Environment>
 	<Camera>
-		<Position x="288.753" y="79.8456" z="684.654"/>
+		<Position x="472.718" y="98.3807" z="557.802"/>
 		<Rotation angle="0"/>
 		<Declination angle="0.610865"/>
 	</Camera>
 	<ScriptSettings><![CDATA[
 {
   "CircularMap": true,
-  "Preview": "median_oasis_4.png",
-  "Description": "An oasis surrounded by mountains and desert. Farmlands near the water's edge provide much-needed boost in farming, but foraging and hunting is in short supply.",
+  "Description": "An oasis surrounded by mountains and desert. Farmlands near the water's edge provide much-needed boost in farming, but foraging and hunting are in short supply.",
   "GameType": "conquest",
   "Keywords": [],
   "LockTeams": false,
@@ -70,6 +69,7 @@
       "Team": -1
     }
   ],
+  "Preview": "median_oasis_4.png",
   "RevealMap": false
 }
 ]]></ScriptSettings>
@@ -9944,6 +9944,62 @@
 			<Position x="131.51133" z="470.71366"/>
 			<Orientation y="-2.46367"/>
 			<Actor seed="55804"/>
+		</Entity>
+		<Entity uid="1915">
+			<Template>gaia/fauna_sheep</Template>
+			<Player>0</Player>
+			<Position x="868.50727" z="758.22516"/>
+			<Orientation y="-2.19503"/>
+			<Actor seed="6604"/>
+		</Entity>
+		<Entity uid="1916">
+			<Template>gaia/fauna_sheep</Template>
+			<Player>0</Player>
+			<Position x="806.01856" z="737.30335"/>
+			<Orientation y="1.01293"/>
+			<Actor seed="51098"/>
+		</Entity>
+		<Entity uid="1917">
+			<Template>gaia/fauna_sheep</Template>
+			<Player>0</Player>
+			<Position x="716.00794" z="803.03602"/>
+			<Orientation y="-1.75367"/>
+			<Actor seed="22736"/>
+		</Entity>
+		<Entity uid="1918">
+			<Template>gaia/fauna_sheep</Template>
+			<Player>0</Player>
+			<Position x="746.31312" z="866.7613"/>
+			<Orientation y="0.8336"/>
+			<Actor seed="59306"/>
+		</Entity>
+		<Entity uid="1919">
+			<Template>gaia/fauna_sheep</Template>
+			<Player>0</Player>
+			<Position x="318.67304" z="205.32438"/>
+			<Orientation y="-2.18583"/>
+			<Actor seed="48262"/>
+		</Entity>
+		<Entity uid="1920">
+			<Template>gaia/fauna_sheep</Template>
+			<Player>0</Player>
+			<Position x="243.83446" z="130.37183"/>
+			<Orientation y="0.92566"/>
+			<Actor seed="24340"/>
+		</Entity>
+		<Entity uid="1921">
+			<Template>gaia/fauna_sheep</Template>
+			<Player>0</Player>
+			<Position x="133.06174" z="248.04532"/>
+			<Orientation y="0.95624"/>
+			<Actor seed="41954"/>
+		</Entity>
+		<Entity uid="1922">
+			<Template>gaia/fauna_sheep</Template>
+			<Player>0</Player>
+			<Position x="201.52147" z="299.61274"/>
+			<Orientation y="-0.73501"/>
+			<Actor seed="8300"/>
 		</Entity>
 	</Entities>
 	<Paths/>

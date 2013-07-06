@@ -1,4 +1,4 @@
-/* Copyright (C) 2013 Wildfire Games.
+	/* Copyright (C) 2013 Wildfire Games.
  * This file is part of 0 A.D.
  *
  * 0 A.D. is free software: you can redistribute it and/or modify
@@ -17,23 +17,19 @@
 
 #include "precompiled.h"
 
+#include "ISoundManager.h"
 #include "SoundManager.h"
 
 #include "soundmanager/data/SoundData.h"
 #include "soundmanager/items/CSoundItem.h"
 #include "soundmanager/items/CBufferItem.h"
 #include "soundmanager/items/CStreamItem.h"
-#include "soundmanager/js/SoundPlayer.h"
-#include "soundmanager/js/AmbientSound.h"
-#include "soundmanager/js/MusicList.h"
-#include "soundmanager/js/MusicSound.h"
-#include "soundmanager/js/Sound.h"
 #include "lib/external_libraries/libsdl.h"
 #include "ps/CLogger.h"
 #include "ps/CStr.h"
 #include "ps/Profiler2.h"
 
-CSoundManager* g_SoundManager = NULL;
+ISoundManager* g_SoundManager = NULL;
 
 #define		SOURCE_NUM		64
 
@@ -207,29 +203,15 @@ private:
 	bool m_Enabled;
 	bool m_Shutdown;
 
-	CSoundManagerWorker(CSoundManager* UNUSED(other)){};
+	CSoundManagerWorker(ISoundManager* UNUSED(other)){};
 };
-#endif
 
-void CSoundManager::ScriptingInit()
-{
-	JAmbientSound::ScriptingInit();
-	JMusicSound::ScriptingInit();
-	JSound::ScriptingInit();
-	JSoundPlayer::ScriptingInit();
-	JMusicList::ScriptingInit();
-}
-
-
-#if CONFIG2_AUDIO
-
-
-void CSoundManager::CreateSoundManager()
+void ISoundManager::CreateSoundManager()
 {
 	g_SoundManager = new CSoundManager();
 }
 
-void CSoundManager::SetEnabled(bool doEnable)
+void ISoundManager::SetEnabled(bool doEnable)
 {
 	if ( g_SoundManager && !doEnable ) 
 	{
@@ -237,7 +219,7 @@ void CSoundManager::SetEnabled(bool doEnable)
 	}
 	else if ( ! g_SoundManager && doEnable ) 
 	{
-		CSoundManager::CreateSoundManager();
+		ISoundManager::CreateSoundManager();
 	}
 }
 
@@ -266,8 +248,9 @@ CSoundManager::CSoundManager()
 	m_MusicGain			= 1;
 	m_AmbientGain		= 1;
 	m_ActionGain		= 1;
+	m_UIGain = 1;
 	m_BufferCount		= 50;
-	m_BufferSize		= 65536;
+	m_BufferSize		= 98304;
 	m_SoundEnabled		= true;
 	m_MusicEnabled		= true;
 	m_MusicPaused     = false;
@@ -309,6 +292,10 @@ CSoundManager::~CSoundManager()
 		delete m_Worker;
 	}
 	AL_CHECK
+
+	for (std::map<std::wstring, CSoundGroup*>::iterator it = m_SoundGroups.begin(); it != m_SoundGroups.end(); ++it)
+		delete it->second;
+	m_SoundGroups.clear();
 
 	if ( m_PlayListItems )
 		delete m_PlayListItems;
@@ -452,11 +439,6 @@ void CSoundManager::ReleaseALSource(ALuint theSource)
 	}
 }
 
-void CSoundManager::SetMemoryUsage(long bufferSize, int bufferCount)
-{
-	m_BufferCount = bufferCount;
-	m_BufferSize = bufferSize;
-}
 long CSoundManager::GetBufferCount()
 {
 	return m_BufferCount;
@@ -466,9 +448,9 @@ long CSoundManager::GetBufferSize()
 	return m_BufferSize;
 }
 
-void CSoundManager::AddPlayListItem( const VfsPath& itemPath)
+void CSoundManager::AddPlayListItem( const VfsPath* itemPath)
 {
-  m_PlayListItems->push_back( itemPath );
+  m_PlayListItems->push_back( *itemPath );
 }
 
 void CSoundManager::ClearPlayListItems()
@@ -485,22 +467,24 @@ void CSoundManager::ClearPlayListItems()
 
 void CSoundManager::StartPlayList( bool doLoop )
 {
-  if ( !m_PlayListItems->empty() )
-  {
-    m_PlayingPlaylist = true;
-    m_LoopingPlaylist = doLoop;
-    m_RunningPlaylist = false;
-    
-    ISoundItem* aSnd = g_SoundManager->LoadItem( (m_PlayListItems->at( 0 )) );
-    if ( aSnd )
-      SetMusicItem( aSnd );
-    else
-    {
-      SetMusicItem( NULL );
-    }
-  }
+	if ( m_MusicEnabled )
+	{
+	  if ( m_PlayListItems->size() > 0 )
+	  {
+	    m_PlayingPlaylist = true;
+	    m_LoopingPlaylist = doLoop;
+	    m_RunningPlaylist = false;
+	    
+	    ISoundItem* aSnd = LoadItem( (m_PlayListItems->at( 0 )) );
+	    if ( aSnd )
+	      SetMusicItem( aSnd );
+	    else
+	    {
+	      SetMusicItem( NULL );
+	    }
+	  }
+	}
 }
-
 
 void CSoundManager::SetMasterGain(float gain)
 {
@@ -523,6 +507,10 @@ void CSoundManager::SetAmbientGain(float gain)
 void CSoundManager::SetActionGain(float gain)
 {
 	m_ActionGain = gain;
+}
+void CSoundManager::SetUIGain(float gain)
+{
+	m_UIGain = gain;
 }
 
 
@@ -598,7 +586,7 @@ void CSoundManager::IdleTask()
 						else
 							nextPath = *it;
 
-						ISoundItem* aSnd = g_SoundManager->LoadItem( nextPath );
+						ISoundItem* aSnd = LoadItem( nextPath );
 						if ( aSnd )
 							SetMusicItem( aSnd );
 					}
@@ -639,19 +627,6 @@ void CSoundManager::InitListener()
 	alDistanceModel(AL_LINEAR_DISTANCE);
 }
 
-void CSoundManager::PlayActionItem(ISoundItem* anItem)
-{
-	if (anItem)
-	{
-		if (m_Enabled && (m_ActionGain > 0))
-		{
-			anItem->SetGain( m_ActionGain );
-			anItem->Play();
-			AL_CHECK
-		}
-	}
-}
-
 void CSoundManager::PlayGroupItem(ISoundItem* anItem, ALfloat groupGain )
 {
 	if (anItem)
@@ -672,6 +647,104 @@ void CSoundManager::SetMusicEnabled (bool isEnabled)
 		m_CurrentTune = 0L;
 	}
 	m_MusicEnabled = isEnabled;
+}
+
+void CSoundManager::PlayAsGroup(const VfsPath& groupPath, CVector3D sourcePos, entity_id_t source, bool ownedSound)
+{
+	// Make sure the sound group is loaded
+	CSoundGroup* group;
+	if (m_SoundGroups.find(groupPath.string()) == m_SoundGroups.end())
+	{
+		group = new CSoundGroup();
+		if (!group->LoadSoundGroup(L"audio/" + groupPath.string() ))
+		{
+			LOGERROR(L"Failed to load sound group '%ls'", groupPath.string().c_str());
+			delete group;
+			group = NULL;
+		}
+		// Cache the sound group (or the null, if it failed)
+		m_SoundGroups[groupPath.string()] = group;
+	}
+	else
+	{
+		group = m_SoundGroups[groupPath.string()];
+	}
+
+	// Failed to load group -> do nothing
+	if ( group && ( ownedSound || !group->TestFlag( eOwnerOnly ) ) )
+		group->PlayNext(sourcePos, source);
+}
+
+void CSoundManager::PlayAsMusic( const VfsPath& itemPath, bool looping )
+{
+		UNUSED2( looping );
+
+    ISoundItem* aSnd = LoadItem(itemPath);
+    if (aSnd != NULL)
+      SetMusicItem( aSnd );
+}
+
+void CSoundManager::PlayAsAmbient( const VfsPath& itemPath, bool looping )
+{
+		UNUSED2( looping );
+    ISoundItem* aSnd = LoadItem(itemPath);
+    if (aSnd != NULL)
+      SetAmbientItem( aSnd );
+}
+
+
+void CSoundManager::PlayAsUI(const VfsPath& itemPath, bool looping)
+{
+	IdleTask();
+	
+  if ( ISoundItem* anItem = LoadItem(itemPath) )
+	{
+		if (m_Enabled && (m_UIGain > 0))
+		{
+			anItem->SetGain(m_UIGain);
+			anItem->SetLooping( looping );
+			anItem->PlayAndDelete();
+		}
+	}
+	AL_CHECK
+}
+
+
+void CSoundManager::Pause(bool pauseIt)
+{
+  PauseMusic(pauseIt);
+  PauseAmbient(pauseIt);
+  PauseAction(pauseIt);
+}
+
+void CSoundManager::PauseMusic (bool pauseIt)
+{
+	if (m_CurrentTune && pauseIt && !m_MusicPaused )
+	{
+		m_CurrentTune->FadeAndPause( 1.0 );
+	}
+	else if ( m_CurrentTune && m_MusicPaused && !pauseIt && m_MusicEnabled )
+	{
+		m_CurrentTune->SetGain(0);
+		m_CurrentTune->Resume();
+		m_CurrentTune->FadeToIn( m_MusicGain, 1.0);
+	}
+	m_MusicPaused = pauseIt;
+}
+
+void CSoundManager::PauseAmbient (bool pauseIt)
+{
+  if (m_CurrentEnvirons && pauseIt)
+    m_CurrentEnvirons->Pause();
+  else if ( m_CurrentEnvirons )
+    m_CurrentEnvirons->Resume();
+
+  m_AmbientPaused = pauseIt;
+}
+
+void CSoundManager::PauseAction (bool pauseIt)
+{
+  m_ActionPaused = pauseIt;
 }
 
 void CSoundManager::SetMusicItem(ISoundItem* anItem)
@@ -731,45 +804,10 @@ void CSoundManager::SetAmbientItem(ISoundItem* anItem)
 	}
 	AL_CHECK
 }
+#else // CONFIG2_AUDIO
 
-
-void CSoundManager::Pause(bool pauseIt)
-{
-  PauseMusic(pauseIt);
-  PauseAmbient(pauseIt);
-  PauseAction(pauseIt);
-}
-
-void CSoundManager::PauseMusic (bool pauseIt)
-{
-	if (m_CurrentTune && pauseIt && !m_MusicPaused )
-	{
-		m_CurrentTune->FadeAndPause( 1.0 );
-	}
-	else if ( m_CurrentTune && m_MusicPaused && !pauseIt )
-	{
-		m_CurrentTune->SetGain(0);
-		m_CurrentTune->Resume();
-		m_CurrentTune->FadeToIn( m_MusicGain, 1.0);
-	}
-	m_MusicPaused = pauseIt;
-}
-
-void CSoundManager::PauseAmbient (bool pauseIt)
-{
-  if (m_CurrentEnvirons && pauseIt)
-    m_CurrentEnvirons->Pause();
-  else if ( m_CurrentEnvirons )
-    m_CurrentEnvirons->Resume();
-
-  m_AmbientPaused = pauseIt;
-}
-
-void CSoundManager::PauseAction (bool pauseIt)
-{
-  m_ActionPaused = pauseIt;
-}
-
+void ISoundManager::CreateSoundManager(){}
+void ISoundManager::SetEnabled(bool UNUSED(doEnable)){}
 
 #endif // CONFIG2_AUDIO
 
