@@ -557,7 +557,7 @@ void CMiniMap::Draw()
 					else
 					{
 						addVertex(v, attrColor, attrPos);
-						m_EntitiesDrawn++;
+						++m_EntitiesDrawn;
 					}
 				}
 			}
@@ -567,7 +567,7 @@ void CMiniMap::Draw()
 		for (int v = 0; v < numPinging; ++v)
 		{
 			addVertex(pingingVertices[v], attrColor, attrPos);
-			m_EntitiesDrawn++;
+			++m_EntitiesDrawn;
 		}
 
 		ENSURE(m_EntitiesDrawn < MAX_ENTITIES_DRAWN);
