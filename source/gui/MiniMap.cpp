@@ -302,6 +302,24 @@ struct MinimapUnitVertex
 	float x, y;
 };
 
+// Adds a vertex to the passed VertexArray
+void inline addVertex(MinimapUnitVertex& v,
+					  VertexArrayIterator<u8[4]>& attrColor,
+					  VertexArrayIterator<float[2]>& attrPos)
+{
+	(*attrColor)[0] = v.r;
+	(*attrColor)[1] = v.g;
+	(*attrColor)[2] = v.b;
+	(*attrColor)[3] = v.a;
+	++attrColor;
+
+	(*attrPos)[0] = v.x;
+	(*attrPos)[1] = v.y;
+
+	++attrPos;
+}
+
+
 void CMiniMap::DrawTexture(float coordMax, float angle, float x, float y, float x2, float y2, float z)
 {
 	// Rotate the texture coordinates (0,0)-(coordMax,coordMax) around their center point (m,m)
@@ -509,6 +527,10 @@ void CMiniMap::Draw()
 
 		m_EntitiesDrawn = 0;
 		MinimapUnitVertex v;
+		std::vector<MinimapUnitVertex> pingingVertices;
+		pingingVertices.reserve(MAX_ENTITIES_DRAWN/2);
+		int numPinging = 0;
+
 		entity_pos_t posX, posZ;
 		for (CSimulation2::InterfaceList::const_iterator it = ents.begin(); it != ents.end(); ++it)
 		{
@@ -523,36 +545,31 @@ void CMiniMap::Draw()
 					v.y = -posZ.ToFloat()*sy;
 					
 					// Check minimap pinging to indicate something
-					if (cmpMinimap->IsPinging())
+					if (cmpMinimap->IsPinging() && cmpMinimap->CheckPing())
 					{
-						// Override the normal rendering of the entity with the ping color
-						// Note: If the pinged entity's dot is rendered over by another entity's
-						// dot then it will be invisible & the ping will be not be seen.
-						// We can try to move the pinged dots towards the end in the vertexArray
-						// Keep 2 pointers and insert pinged dots at end, unpinged at current position
-						if (cmpMinimap->CheckPing())
-						{
-							v.r = 255; // ping color is white
-							v.g = 255;
-							v.b = 255;
-						}
+						v.r = 255; // ping color is white
+						v.g = 255;
+						v.b = 255;
+
+						pingingVertices.push_back(v);
+						++numPinging;
 					}
-
-					(*attrColor)[0] = v.r;
-					(*attrColor)[1] = v.g;
-					(*attrColor)[2] = v.b;
-					(*attrColor)[3] = v.a;
-					++attrColor;
-
-					(*attrPos)[0] = v.x;
-					(*attrPos)[1] = v.y;
-		
-					++attrPos;
-
-					m_EntitiesDrawn++;
+					else
+					{
+						addVertex(v, attrColor, attrPos);
+						m_EntitiesDrawn++;
+					}
 				}
 			}
 		}
+
+		// Add the pinged vertices at the end
+		for (int v = 0; v < numPinging; ++v)
+		{
+			addVertex(pingingVertices[v], attrColor, attrPos);
+			m_EntitiesDrawn++;
+		}
+
 		ENSURE(m_EntitiesDrawn < MAX_ENTITIES_DRAWN);
 		m_VertexArray.Upload();
 	}
